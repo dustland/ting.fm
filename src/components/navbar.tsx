@@ -4,6 +4,12 @@ import Link from "next/link"
 import { Icons } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const navItems = [
   {
@@ -26,19 +32,21 @@ const navItems = [
 export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
-        <div className="mr-4 flex">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
-            <Icons.logo className="h-6 w-6" />
-            <span className="font-bold">Ting.fm</span>
+      <div className="container flex h-14 items-center justify-between">
+        {/* Logo and Desktop Navigation */}
+        <div className="flex items-center gap-6">
+          <Link href="/" className="flex items-center space-x-2">
+            <Icons.logo className="h-5 w-5" />
+            <span className="hidden font-bold sm:inline-block">Ting.fm</span>
           </Link>
-          <nav className="flex items-center space-x-6 text-sm font-medium">
+          <nav className="hidden md:flex">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center space-x-2 text-muted-foreground hover:text-foreground"
+                  "flex h-14 w-full items-center justify-center gap-2 px-4 text-sm font-medium transition-colors hover:text-primary",
+                  "text-muted-foreground"
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -47,15 +55,38 @@ export function Navbar() {
             ))}
           </nav>
         </div>
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <div className="w-full flex-1 md:w-auto md:flex-none">
-          </div>
-          <nav className="flex items-center">
-            <Button variant="ghost" size="icon">
-              <Icons.settings className="h-4 w-4" />
-              <span className="sr-only">设置</span>
-            </Button>
-          </nav>
+
+        {/* Mobile Navigation */}
+        <div className="flex md:hidden">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Icons.menu className="h-5 w-5" />
+                <span className="sr-only">打开菜单</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[200px]">
+              {navItems.map((item) => (
+                <DropdownMenuItem key={item.href} asChild>
+                  <Link
+                    href={item.href}
+                    className="flex items-center gap-2 py-2"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Settings Button */}
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="hidden md:flex">
+            <Icons.settings className="h-4 w-4" />
+            <span className="sr-only">设置</span>
+          </Button>
         </div>
       </div>
     </header>

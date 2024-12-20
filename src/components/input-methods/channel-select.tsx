@@ -41,70 +41,89 @@ const predefinedChannels: Channel[] = [
 ]
 
 interface ChannelSelectProps {
-  onChannelSubmit: (channel: Channel, customKeywords?: string) => void
+  onSubmit: (content: string) => Promise<void>
+  isLoading: boolean
 }
 
-export function ChannelSelect({ onChannelSubmit }: ChannelSelectProps) {
-  const [selectedChannel, setSelectedChannel] = useState<string>("")
+export function ChannelSelect({ onSubmit, isLoading }: ChannelSelectProps) {
+  const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null)
   const [customKeywords, setCustomKeywords] = useState("")
   const [error, setError] = useState("")
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedChannel) {
       setError("请选择一个频道")
       return
     }
 
-    const channel = predefinedChannels.find((c) => c.id === selectedChannel)
-    if (!channel) {
-      setError("无效的频道")
-      return
+    try {
+      const content = JSON.stringify({
+        channel: selectedChannel,
+        customKeywords: customKeywords.trim() || undefined,
+      })
+      await onSubmit(content)
+    } catch (err) {
+      setError("处理内容时出错，请重试")
     }
-
-    setError("")
-    onChannelSubmit(channel, customKeywords.trim() || undefined)
   }
 
   return (
     <div className="space-y-4">
-      <Select
-        value={selectedChannel}
-        onValueChange={(value) => {
-          setSelectedChannel(value)
-          setError("")
-        }}
-      >
-        <SelectTrigger className={error ? "border-destructive" : ""}>
-          <SelectValue placeholder="选择预设频道" />
-        </SelectTrigger>
-        <SelectContent>
-          {predefinedChannels.map((channel) => (
-            <SelectItem key={channel.id} value={channel.id}>
-              <div className="flex flex-col space-y-1">
-                <div className="font-medium">{channel.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {channel.description}
-                </div>
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="space-y-2">
+        <Select
+          onValueChange={(value) => {
+            const channel = predefinedChannels.find((c) => c.id === value)
+            setSelectedChannel(channel || null)
+            setError("")
+          }}
+          disabled={isLoading}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="选择一个频道" />
+          </SelectTrigger>
+          <SelectContent>
+            {predefinedChannels.map((channel) => (
+              <SelectItem key={channel.id} value={channel.id}>
+                {channel.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <Input
-        placeholder="可选：添加自定义关键词，用逗号分隔"
-        value={customKeywords}
-        onChange={(e) => setCustomKeywords(e.target.value)}
-      />
+        {selectedChannel && (
+          <div className="rounded-md bg-muted p-4">
+            <p className="text-sm font-medium">{selectedChannel.description}</p>
+            <div className="mt-2">
+              <p className="text-sm text-muted-foreground">
+                默认关键词：{selectedChannel.keywords}
+              </p>
+            </div>
+          </div>
+        )}
 
-      <div className="flex justify-end">
-        <Button onClick={handleSubmit}>
-          <Icons.channel className="mr-2 h-4 w-4" />
-          开始生成
-        </Button>
+        <Input
+          placeholder="添加自定义关键词（可选，用逗号分隔）"
+          value={customKeywords}
+          onChange={(e) => setCustomKeywords(e.target.value)}
+          disabled={!selectedChannel || isLoading}
+        />
+        {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
 
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      <Button
+        onClick={handleSubmit}
+        disabled={!selectedChannel || isLoading}
+        className="w-full"
+      >
+        {isLoading ? (
+          <>
+            <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+            处理中...
+          </>
+        ) : (
+          "开始创作"
+        )}
+      </Button>
     </div>
   )
 }

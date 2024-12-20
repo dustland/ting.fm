@@ -4,16 +4,20 @@ import { useState } from "react"
 import { Icons } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Chat } from "@/components/chat"
+import { Message } from "ai"
+import { TextToScriptRequest } from "@/app/api/text/route"
 
 interface TextInputProps {
-  onTextSubmit: (text: string) => void
+  onSubmit: (content: string) => Promise<void>
+  isLoading: boolean
 }
 
-export function TextInput({ onTextSubmit }: TextInputProps) {
+export function TextInput({ onSubmit, isLoading }: TextInputProps) {
   const [text, setText] = useState("")
   const [error, setError] = useState("")
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!text.trim()) {
       setError("请输入内容")
       return
@@ -24,31 +28,56 @@ export function TextInput({ onTextSubmit }: TextInputProps) {
       return
     }
 
-    setError("")
-    onTextSubmit(text)
+    try {
+      setError("")
+      const response = await fetch("/api/text", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text,
+        } as TextToScriptRequest),
+      })
+
+      if (!response.ok) {
+        throw new Error("API request failed")
+      }
+
+      const data = await response.json()
+      await onSubmit(JSON.stringify(data))
+    } catch (err) {
+      setError("处理内容时出错，请重试")
+      console.error("Error processing text:", err)
+    }
   }
 
   return (
     <div className="space-y-4">
-      <Textarea
-        placeholder="输入或粘贴文本内容"
-        value={text}
-        onChange={(e) => {
-          setText(e.target.value)
-          setError("")
-        }}
-        className={`min-h-[200px] ${error ? "border-destructive" : ""}`}
-      />
-      <div className="flex items-center justify-between">
+      <div className="space-y-2">
+        <Textarea
+          placeholder="输入或粘贴文本内容"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          disabled={isLoading}
+          className="min-h-[200px] resize-none"
+        />
+        {error && <p className="text-sm text-destructive">{error}</p>}
         <p className="text-xs text-muted-foreground">
           已输入 {text.length} 个字符
         </p>
-        <Button onClick={handleSubmit}>
-          <Icons.text className="mr-2 h-4 w-4" />
-          生成播客
-        </Button>
       </div>
-      {error && <p className="text-xs text-destructive">{error}</p>}
+
+      <Button onClick={handleSubmit} disabled={isLoading} className="w-full">
+        {isLoading ? (
+          <>
+            <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+            处理中...
+          </>
+        ) : (
+          "开始创作"
+        )}
+      </Button>
     </div>
   )
 }

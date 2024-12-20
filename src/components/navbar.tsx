@@ -1,15 +1,16 @@
 "use client"
 
 import Link from "next/link"
-import { Icons } from "@/components/icons"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { usePathname } from "next/navigation";
+import { Icons } from "@/components/icons";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
 const navItems = [
   {
@@ -18,21 +19,30 @@ const navItems = [
     icon: Icons.home,
   },
   {
-    title: "创建",
-    href: "/create",
-    icon: Icons.create,
+    title: "创作",
+    href: "/pods",
+    icon: Icons.podcast,
   },
   {
     title: "发现",
     href: "/discover",
     icon: Icons.discover,
   },
-]
+];
 
 export function Navbar() {
+  const pathname = usePathname();
+
+  const isActive = (href: string) => {
+    if (href === "/") {
+      return pathname === href;
+    }
+    return pathname.startsWith(href);
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-between">
+      <div className="container flex h-10 items-center justify-between">
         {/* Logo and Desktop Navigation */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center space-x-2">
@@ -45,8 +55,10 @@ export function Navbar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex h-14 w-full items-center justify-center gap-2 px-4 text-sm font-medium transition-colors hover:text-primary",
-                  "text-muted-foreground"
+                  "flex h-10 w-full items-center border-b-2 justify-center gap-2 px-4 text-sm font-medium transition-colors hover:text-primary",
+                  isActive(item.href)
+                    ? "text-primary border-primary"
+                    : "text-muted-foreground border-transparent"
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -70,7 +82,10 @@ export function Navbar() {
                 <DropdownMenuItem key={item.href} asChild>
                   <Link
                     href={item.href}
-                    className="flex items-center gap-2 py-2"
+                    className={cn(
+                      "flex w-full items-center gap-2 py-2",
+                      isActive(item.href) && "text-primary font-medium"
+                    )}
                   >
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
@@ -83,12 +98,14 @@ export function Navbar() {
 
         {/* Settings Button */}
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="hidden md:flex">
-            <Icons.settings className="h-4 w-4" />
-            <span className="sr-only">设置</span>
+          <Button variant="ghost" size="icon" className="hidden md:flex" asChild>
+            <Link href="/settings">
+              <Icons.settings className="h-4 w-4" />
+              <span className="sr-only">设置</span>
+            </Link>
           </Button>
         </div>
       </div>
     </header>
-  )
+  );
 }

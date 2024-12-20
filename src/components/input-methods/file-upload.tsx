@@ -6,12 +6,16 @@ import { Icons } from "@/components/icons"
 import { cn } from "@/lib/utils"
 
 interface FileUploadProps {
-  onFileSelect: (file: File) => void
+  onSubmit: (content: string) => Promise<void>
+  isLoading: boolean
+  onFileSelect?: (file: File) => void
   accept?: Record<string, string[]>
   maxSize?: number
 }
 
 export function FileUpload({
+  onSubmit,
+  isLoading,
   onFileSelect,
   accept = {
     "text/plain": [".txt"],
@@ -26,18 +30,25 @@ export function FileUpload({
   const [error, setError] = useState<string>("")
 
   const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
+    async (acceptedFiles: File[]) => {
       if (acceptedFiles.length > 0) {
         const file = acceptedFiles[0]
         if (file.size > maxSize) {
           setError("文件太大，请上传小于 5MB 的文件")
           return
         }
-        setError("")
-        onFileSelect(file)
+        try {
+          const text = await file.text()
+          await onSubmit(text)
+        } catch (err) {
+          setError("读取文件失败，请重试")
+        }
+        if (onFileSelect) {
+          onFileSelect(file)
+        }
       }
     },
-    [maxSize, onFileSelect]
+    [maxSize, onSubmit, onFileSelect]
   )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -53,7 +64,8 @@ export function FileUpload({
       className={cn(
         "flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center hover:bg-accent/50 cursor-pointer",
         isDragActive && "border-primary bg-accent",
-        error && "border-destructive"
+        error && "border-destructive",
+        isLoading && "opacity-50 pointer-events-none"
       )}
     >
       <input {...getInputProps()} />
@@ -73,6 +85,14 @@ export function FileUpload({
         </p>
         {error && <p className="text-xs text-destructive">{error}</p>}
       </div>
+      {isLoading ? (
+        <>
+          <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+          处理中...
+        </>
+      ) : (
+        "开始创作"
+      )}
     </div>
   )
 }

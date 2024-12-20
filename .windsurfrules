@@ -1,0 +1,8 @@
+1. All UI in Chinese
+2. Shadcn UI
+3. TailwindCSS
+4. All icons from Lucide, used as Icons.name, when you add new icon, please first update icons.tsx
+5. Use Next.js 15 with App Router
+6. Use Typescript
+7. Use PNPM
+8. Command to install shadcn ui componnets: npx shadcn@latest add (component)

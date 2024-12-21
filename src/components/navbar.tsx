@@ -99,12 +99,6 @@ export function Navbar() {
 
         {/* Settings Button */}
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="hidden md:flex" asChild>
-            <Link href="/settings">
-              <Icons.settings className="h-4 w-4" />
-              <span className="sr-only">设置</span>
-            </Link>
-          </Button>
           <AuthButton />
         </div>
       </div>

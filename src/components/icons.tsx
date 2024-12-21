@@ -35,6 +35,10 @@ import {
   Square,
   Webhook,
   Calendar,
+  Sun,
+  Moon,
+  Laptop,
+  LogOut,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -78,6 +82,10 @@ export const Icons = {
   sparkles: Sparkles,
   webhook: Webhook,
   calendar: Calendar,
+  sun: Sun,
+  moon: Moon,
+  laptop: Laptop,
+  logout: LogOut,
   google: (props: any) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"

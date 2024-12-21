@@ -8,8 +8,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ThemeSwitch } from "./theme-switch";
+import Link from "next/link";
 
 export function AuthButton() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
@@ -52,8 +55,33 @@ export function AuthButton() {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => signOut()}>
+      <DropdownMenuContent align="end" className="w-56">
+        <div className="flex items-center justify-start gap-2 p-2">
+          <div className="flex flex-col space-y-1 leading-none">
+            {user.user_metadata.full_name && (
+              <p className="font-medium">{user.user_metadata.full_name}</p>
+            )}
+            {user.email && (
+              <p className="w-[200px] truncate text-sm text-muted-foreground">
+                {user.email}
+              </p>
+            )}
+          </div>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/settings" className="flex w-full items-center gap-2">
+            <Icons.settings className="h-4 w-4" />
+            设置
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <div className="p-2">
+          <ThemeSwitch />
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => signOut()} className="text-red-600">
+          <Icons.logout className="h-4 w-4 mr-2" />
           退出登录
         </DropdownMenuItem>
       </DropdownMenuContent>

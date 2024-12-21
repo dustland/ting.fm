@@ -1,12 +1,20 @@
 import { useCallback } from "react";
 import { nanoid } from "nanoid";
 import { Dialogue, PodSource, usePodStore, type Pod } from "@/store/pod";
+import useSWR, { mutate } from "swr";
+
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch pods');
+  return res.json();
+};
 
 export function usePods(podId?: string) {
   const { pods, addPod, updatePod, deletePod, getPod } = usePodStore();
+  const { data: remotePods, error, isLoading } = useSWR('/api/pods', fetcher);
 
   const createPod = useCallback(
-    (title: string, source: PodSource) => {
+    async (title: string, source: PodSource) => {
       const id = nanoid(6);
       console.log(`[Pods] Creating new pod with id: ${id}, title: ${title}`);
       const newPod: Pod = {
@@ -15,87 +23,87 @@ export function usePods(podId?: string) {
         title,
         source,
         dialogues: [],
-        createdAt: new Date().toISOString(),
         status: "draft",
       };
-      addPod(newPod);
-      return newPod.id;
+
+      try {
+        const response = await fetch('/api/pods', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newPod),
+        });
+
+        if (!response.ok) throw new Error('Failed to create pod');
+        
+        const savedPod = await response.json();
+        addPod(savedPod);
+        mutate('/api/pods');
+        return savedPod.id;
+      } catch (error) {
+        console.error('[CREATE_POD_ERROR]', error);
+        throw error;
+      }
     },
     [addPod]
   );
 
   const saveSource = useCallback(
-    (id: string, source: PodSource) => {
-      updatePod(id, {
-        source,
-        updatedAt: new Date().toISOString(),
-      });
+    async (id: string, source: PodSource) => {
+      try {
+        const response = await fetch('/api/pods', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, source, status: 'draft' }),
+        });
+
+        if (!response.ok) throw new Error('Failed to update pod source');
+
+        const updatedPod = await response.json();
+        updatePod(id, {
+          source,
+          updatedAt: updatedPod.updatedAt,
+        });
+        mutate('/api/pods');
+      } catch (error) {
+        console.error('[SAVE_SOURCE_ERROR]', error);
+        throw error;
+      }
     },
     [updatePod]
   );
 
   const publishPod = useCallback(
-    (id: string) => {
-      updatePod(id, {
-        status: "published",
-        updatedAt: new Date().toISOString(),
-      });
+    async (id: string) => {
+      try {
+        const response = await fetch('/api/pods', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, status: 'published' }),
+        });
+
+        if (!response.ok) throw new Error('Failed to publish pod');
+
+        const updatedPod = await response.json();
+        updatePod(id, {
+          status: "published",
+          updatedAt: updatedPod.updatedAt,
+        });
+        mutate('/api/pods');
+      } catch (error) {
+        console.error('[PUBLISH_POD_ERROR]', error);
+        throw error;
+      }
     },
     [updatePod]
   );
 
   return {
-    // Basic CRUD operations
-    pods,
+    pods: remotePods || pods,
     pod: podId ? getPod(podId) : undefined,
     createPod,
-    updatePod,
-    deletePod,
-
-    // Specialized operations
     saveSource,
     publishPod,
-
-    updateDialogue: useCallback(
-      (id: string, dialogueId: string, content: string, host: string) => {
-        const pod = getPod(id);
-        if (!pod) return;
-
-        const dialogues = pod.dialogues || [];
-        const entryIndex = dialogues.findIndex((m) => m.id === dialogueId);
-        const updatedDialogues: Dialogue[] =
-          entryIndex >= 0
-            ? dialogues.map((m, i) =>
-                i === entryIndex
-                  ? { ...m, content, host, createdAt: new Date().toISOString() }
-                  : m
-              )
-            : [
-                ...dialogues,
-                {
-                  id: dialogueId,
-                  content,
-                  host,
-                  createdAt: new Date().toISOString(),
-                },
-              ];
-
-        updatePod(id, { dialogues: updatedDialogues });
-      },
-      [getPod, updatePod]
-    ),
-
-    deleteDialogue: useCallback(
-      (id: string, dialogueId: string) => {
-        const pod = getPod(id);
-        if (!pod) return;
-
-        const dialogues = pod.dialogues || [];
-        updatePod(id, {
-          dialogues: dialogues.filter((m) => m.id !== dialogueId),
-        });
-      },
-      [getPod, updatePod]
-    ),
+    isLoading,
+    error,
   };
 }

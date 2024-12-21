@@ -12,8 +12,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
 
 interface Podcast {
   id: string;

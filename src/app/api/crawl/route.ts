@@ -60,12 +60,35 @@ async function extractContent(url: string): Promise<ExtractedContent> {
   });
 
   try {
-    // Create a new context and page
+    // Create a new context and page with more realistic browser settings
     const context = await browser.newContext({
       userAgent:
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      viewport: { width: 1280, height: 800 },
+      extraHTTPHeaders: {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-cache',
+      }
     });
+    
     const page = await context.newPage();
+
+    // Add request interception for better error handling
+    page.on('response', response => {
+      if (response.status() === 403) {
+        throw new Error('Access denied by the website. The site might be blocking automated access.');
+      }
+    });
 
     // Navigate to the URL with timeout and wait until network is idle
     await page.goto(url, {
@@ -73,11 +96,30 @@ async function extractContent(url: string): Promise<ExtractedContent> {
       waitUntil: "networkidle",
     });
 
+    // Random delay to appear more human-like
+    await page.waitForTimeout(Math.random() * 1000 + 1000);
+
     // Wait for the content to load
     await page.waitForLoadState("domcontentloaded");
 
-    // Scroll to bottom to trigger lazy loading
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    // Scroll to bottom gradually to trigger lazy loading
+    await page.evaluate(async () => {
+      await new Promise((resolve) => {
+        let totalHeight = 0;
+        const distance = 100;
+        const timer = setInterval(() => {
+          const scrollHeight = document.body.scrollHeight;
+          window.scrollBy(0, distance);
+          totalHeight += distance;
+          
+          if(totalHeight >= scrollHeight){
+            clearInterval(timer);
+            resolve(true);
+          }
+        }, 100);
+      });
+    });
+    
     await page.waitForTimeout(2000); // Wait for any lazy-loaded content
 
     // Get the page content

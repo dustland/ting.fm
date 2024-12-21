@@ -19,6 +19,7 @@ export const Icons = {
   settings: LucideIcons.Settings,
   menu: LucideIcons.Menu,
   close: LucideIcons.X,
+  wand: LucideIcons.Wand2,
   spinner: LucideIcons.Loader2,
   check: LucideIcons.Check,
   warning: LucideIcons.AlertTriangle,

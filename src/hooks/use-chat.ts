@@ -4,10 +4,12 @@ interface UseChatOptions {
   format?: "text" | "podcast";
   onResponse?: (response: Response) => void;
   onError?: (error: Error) => void;
+  onFinish?: (message: Message) => void;
 }
 
 export function useChat({
   format = "text",
+  onFinish,
   onResponse,
   onError,
 }: UseChatOptions = {}) {
@@ -32,6 +34,9 @@ export function useChat({
     },
     onError: (error) => {
       onError?.(error);
+    },
+    onFinish: (message) => {
+      onFinish?.(message);
     },
   });
 

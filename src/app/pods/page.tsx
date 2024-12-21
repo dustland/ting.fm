@@ -23,7 +23,7 @@ export default function PodsPage() {
   const { pods, deletePod } = usePods();
 
   const podsList = useMemo(() => {
-    return Object.values(pods).sort(
+    return Object.values(pods as Record<string, Pod>).sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );

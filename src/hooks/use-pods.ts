@@ -110,6 +110,8 @@ export function usePods(podId?: string) {
     createPod,
     saveSource,
     publishPod,
+    deletePod,
+    updatePod,
     isLoading,
     error,
   };

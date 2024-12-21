@@ -28,7 +28,7 @@ export function CreatePodCard({ onCreated, className }: CreatePodCardProps) {
   const handleCreate = async (source: PodSource) => {
     try {
       setIsCreating(true);
-      const podId = createPod("", source);
+      const { id: podId } = await createPod("", source);
       toast({
         title: "播客创建成功",
         description: "正在跳转到播客详情页...",

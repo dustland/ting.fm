@@ -14,12 +14,14 @@ const supabase = createBrowserClient(
   {
     cookies: {
       getAll() {
+        if (typeof window === 'undefined') return [];
         return document.cookie.split("; ").map((cookie) => {
           const [name, value] = cookie.split("=");
           return { name, value };
         });
       },
       setAll(cookiesToSet) {
+        if (typeof window === 'undefined') return;
         cookiesToSet.forEach(({ name, value, options }) => {
           document.cookie = `${name}=${value}; path=${
             options?.path || "/"
@@ -91,6 +93,10 @@ export async function uploadFile(
       error instanceof Error ? error.message : "Failed to upload file"
     );
   }
+}
+
+export function bufferToFile(buffer: Buffer, filename: string, mimetype: string): File {
+  return new File([buffer], filename, { type: mimetype });
 }
 
 export async function deleteFile(path: string, bucket = "attachments") {

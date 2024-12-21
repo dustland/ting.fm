@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Icons } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { CrawlRequest } from "@/app/api/crawl/route"
+import { CrawlRequest } from "@/app/api/scrape/route"
 
 interface UrlInputProps {
   onSubmit: (content: string) => Promise<void>
@@ -29,7 +29,7 @@ export function UrlInput({ onSubmit, isLoading }: UrlInputProps) {
       setIsCrawling(true);
 
       // Call API to crawl URL
-      const response = await fetch("/api/crawl", {
+      const response = await fetch("/api/scrape", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

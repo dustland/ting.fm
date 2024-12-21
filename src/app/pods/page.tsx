@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
@@ -12,63 +12,43 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-interface Podcast {
-  id: string;
-  title: string;
-  description: string;
-  duration: number;
-  createdAt: string;
-  status: "processing" | "ready" | "failed";
-}
-
-// TODO: Replace with real API call
-const mockPodcasts: Podcast[] = [
-  {
-    id: "1",
-    title: "人工智能的未来发展",
-    description: "探讨 AI 技术的最新进展和未来趋势",
-    duration: 1800, // 30 minutes
-    createdAt: "2024-12-20T15:00:00Z",
-    status: "ready",
-  },
-  {
-    id: "2",
-    title: "可持续发展与环保",
-    description: "关于环境保护和可持续发展的深度讨论",
-    duration: 2400, // 40 minutes
-    createdAt: "2024-12-20T14:30:00Z",
-    status: "processing",
-  },
-];
+import { usePods } from "@/hooks/use-pods";
+import { type Pod } from "@/store/pod";
 
 export default function PodsPage() {
-  const [podcasts, setPodcasts] = useState<Podcast[]>(mockPodcasts);
+  const { pods } = usePods();
 
-  const formatDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
+  const podsList = useMemo(() => {
+    return Object.values(pods).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [pods]);
+
+  const formatDuration = (text: string) => {
+    // Roughly estimate duration based on text length
+    const minutes = Math.ceil(text.length / 500); // Assuming 500 characters per minute
     return `${minutes} 分钟`;
   };
 
-  const getStatusIcon = (status: Podcast["status"]) => {
+  const getStatusIcon = (status: Pod["status"]) => {
     switch (status) {
-      case "processing":
-        return <Icons.spinner className="h-4 w-4 animate-spin" />;
+      case "draft":
+        return <Icons.edit className="h-4 w-4" />;
       case "ready":
         return <Icons.check className="h-4 w-4 text-green-500" />;
-      case "failed":
-        return <Icons.error className="h-4 w-4 text-destructive" />;
+      case "published":
+        return <Icons.podcast className="h-4 w-4 text-blue-500" />;
     }
   };
 
-  const getStatusText = (status: Podcast["status"]) => {
+  const getStatusText = (status: Pod["status"]) => {
     switch (status) {
-      case "processing":
-        return "处理中";
+      case "draft":
+        return "草稿";
       case "ready":
         return "已就绪";
-      case "failed":
-        return "生成失败";
+      case "published":
+        return "已发布";
     }
   };
 
@@ -81,7 +61,7 @@ export default function PodsPage() {
             <p className="text-muted-foreground">管理和查看您创建的所有播客</p>
           </div>
           <Button asChild>
-            <Link href="/">
+            <Link href="/pods/new">
               <Icons.create className="mr-2 h-4 w-4" />
               新建播客
             </Link>
@@ -89,28 +69,28 @@ export default function PodsPage() {
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {podcasts.map((podcast) => (
-            <Card key={podcast.id} className="flex flex-col">
+          {podsList.map((pod) => (
+            <Card key={pod.id} className="flex flex-col">
               <CardHeader>
-                <CardTitle className="line-clamp-1">{podcast.title}</CardTitle>
+                <CardTitle className="line-clamp-1">{pod.title}</CardTitle>
                 <CardDescription className="line-clamp-2">
-                  {podcast.description}
+                  {pod.source}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1">
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <Icons.clock className="h-4 w-4" />
-                  <span>{formatDuration(podcast.duration)}</span>
+                  <span>{formatDuration(pod.source || "")}</span>
                 </div>
               </CardContent>
               <CardFooter className="flex items-center justify-between">
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                  {getStatusIcon(podcast.status)}
-                  <span>{getStatusText(podcast.status)}</span>
+                  {getStatusIcon(pod.status)}
+                  <span>{getStatusText(pod.status)}</span>
                 </div>
                 <Button variant="ghost" asChild>
-                  <Link href={`/pods/${podcast.id}`}>
-                    <Icons.play className="mr-2 h-4 w-4" />
+                  <Link href={`/pods/${pod.id}`}>
+                    <Icons.chevronRight className="mr-2 h-4 w-4" />
                     查看详情
                   </Link>
                 </Button>

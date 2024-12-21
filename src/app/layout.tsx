@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Ting.fm - AI 播客生成器",
+  title: "Ting.fm - Podcast AI",
   description: "使用AI生成高质量的播客内容",
-}
+};
 
 export default function RootLayout({
   children,

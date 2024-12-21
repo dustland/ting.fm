@@ -6,7 +6,6 @@ export interface Pod {
   title: string;
   url: string;
   source?: string;
-  topics?: string[];
   dialogue?: Array<{
     id: string;
     content: string;
@@ -18,7 +17,7 @@ export interface Pod {
   status: "draft" | "ready" | "published";
 }
 
-interface PodsState {
+interface PodState {
   pods: Record<string, Pod>;
   addPod: (pod: Pod) => void;
   updatePod: (id: string, updates: Partial<Pod>) => void;
@@ -34,7 +33,7 @@ interface PodsState {
   deleteDialogue: (id: string, dialogueId: string) => void;
 }
 
-export const usePodsStore = create<PodsState>()(
+export const usePodStore = create<PodState>()(
   persist(
     (set, get) => ({
       pods: {},
@@ -43,16 +42,16 @@ export const usePodsStore = create<PodsState>()(
           pods: { ...state.pods, [pod.id]: pod },
         })),
       updatePod: (id, updates) =>
-        set((state) => ({
-          pods: {
-            ...state.pods,
-            [id]: {
-              ...state.pods[id],
-              ...updates,
-              updatedAt: new Date().toISOString(),
+        set((state) => {
+          const pod = state.pods[id];
+          if (!pod) return state;
+          return {
+            pods: {
+              ...state.pods,
+              [id]: { ...pod, ...updates, updatedAt: new Date().toISOString() },
             },
-          },
-        })),
+          };
+        }),
       deletePod: (id) =>
         set((state) => {
           const { [id]: _, ...rest } = state.pods;
@@ -60,49 +59,58 @@ export const usePodsStore = create<PodsState>()(
         }),
       getPod: (id) => get().pods[id],
       updateTopics: (id, topics) =>
-        set((state) => ({
-          pods: {
-            ...state.pods,
-            [id]: {
-              ...state.pods[id],
-              topics,
-              updatedAt: new Date().toISOString(),
+        set((state) => {
+          const pod = state.pods[id];
+          if (!pod) return state;
+          return {
+            pods: {
+              ...state.pods,
+              [id]: {
+                ...pod,
+                topics,
+                updatedAt: new Date().toISOString(),
+              },
             },
-          },
-        })),
+          };
+        }),
       updateDialogue: (id, dialogueId, content, host) =>
         set((state) => {
           const pod = state.pods[id];
+          if (!pod) return state;
+
           const dialogue = pod.dialogue || [];
-          const entryIndex = dialogue.findIndex((m) => m.id === dialogueId);
-          const updatedDialogue =
-            entryIndex >= 0
-              ? dialogue.map((m, i) =>
-                  i === entryIndex
-                    ? {
-                        ...m,
-                        content,
-                        host,
-                        createdAt: new Date().toISOString(),
-                      }
-                    : m
-                )
-              : [
-                  ...dialogue,
-                  {
-                    id: dialogueId,
-                    content,
-                    host,
-                    createdAt: new Date().toISOString(),
-                  },
-                ];
+          const existingDialogueIndex = dialogue.findIndex(
+            (d) => d.id === dialogueId
+          );
+
+          let newDialogue;
+          if (existingDialogueIndex >= 0) {
+            // Update existing dialogue
+            newDialogue = [...dialogue];
+            newDialogue[existingDialogueIndex] = {
+              ...newDialogue[existingDialogueIndex],
+              content,
+              host,
+            };
+          } else {
+            // Add new dialogue
+            newDialogue = [
+              ...dialogue,
+              {
+                id: dialogueId,
+                content,
+                host,
+                createdAt: new Date().toISOString(),
+              },
+            ];
+          }
 
           return {
             pods: {
               ...state.pods,
               [id]: {
                 ...pod,
-                dialogue: updatedDialogue,
+                dialogue: newDialogue,
                 updatedAt: new Date().toISOString(),
               },
             },
@@ -111,13 +119,14 @@ export const usePodsStore = create<PodsState>()(
       deleteDialogue: (id, dialogueId) =>
         set((state) => {
           const pod = state.pods[id];
-          const dialogue = pod.dialogue || [];
+          if (!pod || !pod.dialogue) return state;
+
           return {
             pods: {
               ...state.pods,
               [id]: {
                 ...pod,
-                dialogue: dialogue.filter((m) => m.id !== dialogueId),
+                dialogue: pod.dialogue.filter((d) => d.id !== dialogueId),
                 updatedAt: new Date().toISOString(),
               },
             },
@@ -125,7 +134,7 @@ export const usePodsStore = create<PodsState>()(
         }),
     }),
     {
-      name: "pods-storage",
+      name: "tingfm-pods-storage",
     }
   )
 );

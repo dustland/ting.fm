@@ -1,9 +1,9 @@
 import { useCallback } from "react";
 import { nanoid } from "nanoid";
-import { usePodsStore, type Pod } from "@/stores/pods";
+import { usePodStore, type Pod } from "@/store/pod";
 
 export function usePods(podId?: string) {
-  const { pods, addPod, updatePod, deletePod, getPod } = usePodsStore();
+  const { pods, addPod, updatePod, deletePod, getPod } = usePodStore();
 
   const createPod = useCallback(
     (title: string, source: string) => {
@@ -52,14 +52,6 @@ export function usePods(podId?: string) {
     // Specialized operations
     saveSource,
     publishPod,
-
-    // Topics and dialogue operations
-    updateTopics: useCallback(
-      (id: string, topics: string[]) => {
-        updatePod(id, { topics });
-      },
-      [updatePod]
-    ),
 
     updateDialogue: useCallback(
       (id: string, dialogueId: string, content: string, host: string) => {

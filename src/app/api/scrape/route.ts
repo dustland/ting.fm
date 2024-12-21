@@ -6,22 +6,9 @@ import getMetaData from "metadata-scraper";
 
 export interface CrawlRequest {
   url: string;
-  settings?: {
-    outputLanguage: string;
-    hostStyle: string;
-    llmModel: string;
-    ttsModel: string;
-    characters: Array<{
-      name: string;
-      title: string;
-      gender: "男性" | "女性";
-      voice?: string;
-    }>;
-  };
 }
 
 export interface CrawlResponse {
-  id: string;
   metadata: {
     title: string;
     description: string;
@@ -35,10 +22,6 @@ export interface CrawlResponse {
     wordCount?: number;
   };
   content: string;
-  script: Array<{
-    role: string;
-    content: string;
-  }>;
 }
 
 interface ExtractedContent {
@@ -54,7 +37,6 @@ interface ExtractedContent {
 }
 
 async function extractContent(url: string): Promise<ExtractedContent> {
-  // Launch browser
   const browser = await chromium.launch({
     headless: true,
   });
@@ -66,27 +48,30 @@ async function extractContent(url: string): Promise<ExtractedContent> {
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       viewport: { width: 1280, height: 800 },
       extraHTTPHeaders: {
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'DNT': '1',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Sec-Fetch-User': '?1',
-        'Pragma': 'no-cache',
-        'Cache-Control': 'no-cache',
-      }
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate, br",
+        DNT: "1",
+        Connection: "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        Pragma: "no-cache",
+        "Cache-Control": "no-cache",
+      },
     });
-    
+
     const page = await context.newPage();
 
     // Add request interception for better error handling
-    page.on('response', response => {
+    page.on("response", (response) => {
       if (response.status() === 403) {
-        throw new Error('Access denied by the website. The site might be blocking automated access.');
+        throw new Error(
+          "Access denied by the website. The site might be blocking automated access."
+        );
       }
     });
 
@@ -111,40 +96,28 @@ async function extractContent(url: string): Promise<ExtractedContent> {
           const scrollHeight = document.body.scrollHeight;
           window.scrollBy(0, distance);
           totalHeight += distance;
-          
-          if(totalHeight >= scrollHeight){
+
+          if (totalHeight >= scrollHeight) {
             clearInterval(timer);
             resolve(true);
           }
         }, 100);
       });
     });
-    
+
     await page.waitForTimeout(2000); // Wait for any lazy-loaded content
 
-    // Get the page content
     const html = await page.content();
 
-    // Parse the HTML content with Readability
     const dom = new JSDOM(html, { url });
     const reader = new Readability(dom.window.document);
     const article = reader.parse();
 
     if (!article) {
-      throw new Error("Failed to parse article content");
+      throw new Error("Failed to extract content from URL");
     }
 
-    return {
-      title: article.title,
-      content: article.content,
-      textContent: article.textContent,
-      length: article.length,
-      excerpt: article.excerpt,
-      byline: article.byline,
-      dir: article.dir,
-      siteName: article.siteName,
-      lang: article.lang || "en",
-    };
+    return article;
   } finally {
     await browser.close();
   }
@@ -155,82 +128,69 @@ function estimateReadingTime(wordCount: number): number {
   return Math.ceil(wordCount / WORDS_PER_MINUTE);
 }
 
+function countWords(text: string): number {
+  // Remove HTML tags and trim
+  const cleanText = text.replace(/<[^>]*>/g, "").trim();
+
+  // Count Chinese characters (including Japanese and Korean characters)
+  const cjkCount = (
+    cleanText.match(
+      /[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/g
+    ) || []
+  ).length;
+
+  // Count English words
+  const englishWords = cleanText
+    .replace(/[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/g, "") // Remove CJK characters
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word.length > 0).length;
+
+  // Chinese characters count as one word each, add them to English word count
+  return cjkCount + englishWords;
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as CrawlRequest;
-    const url = new URL(body.url);
+    const { url } = (await req.json()) as CrawlRequest;
+    const parsedUrl = new URL(url);
 
     // Get metadata using metadata-scraper
-    const metadata = await getMetaData(body.url);
+    const metadata = await getMetaData(url);
 
     // Extract content using Playwright and Readability
-    const article = await extractContent(body.url);
+    const article = await extractContent(url);
 
     // Calculate word count and reading time
-    const wordCount = article.textContent.trim().split(/\s+/).length;
+    const wordCount = countWords(article.textContent);
     const readingTime = estimateReadingTime(wordCount);
 
-    // Get settings from user's preferences if not provided
-    const settings = body.settings || {
-      outputLanguage: "zh",
-      hostStyle: "默认风格",
-      llmModel: "Qwen2.5 72B",
-      ttsModel: "Doubao TTS",
-      characters: [
-        {
-          name: "主持人",
-          title: "AI 播客主持人",
-          gender: "男性",
-        },
-      ],
-    };
-
-    // TODO: Replace with actual AI script generation
-    // This is just a mock response for now
     const response: CrawlResponse = {
-      id: "test-" + Date.now(),
       metadata: {
         title: article.title || metadata.title || "未知标题",
         description: article.excerpt || metadata.description || "无描述",
         author: metadata.author
-          ? (Array.isArray(metadata.author)
-              ? metadata.author.join(", ") || "未知作者"
-              : metadata.author)
-          : article.byline || "未知作者",
+          ? Array.isArray(metadata.author)
+            ? metadata.author.join(", ")
+            : metadata.author
+          : article.byline || undefined,
         publishDate: metadata.published
-          ? (Array.isArray(metadata.published)
-              ? metadata.published[0]
-              : metadata.published)
+          ? Array.isArray(metadata.published)
+            ? metadata.published[0]
+            : metadata.published
           : undefined,
-        url: body.url,
-        siteName: (article.siteName || metadata.publisher || url.hostname)?.toString() || undefined,
-        favicon: metadata.icon || `https://${url.hostname}/favicon.ico`,
+        url,
+        siteName: (
+          article.siteName ||
+          metadata.publisher ||
+          parsedUrl.hostname
+        )?.toString(),
+        favicon: metadata.icon || `https://${parsedUrl.hostname}/favicon.ico`,
         image: metadata.image,
         readingTime,
         wordCount,
       },
       content: article.textContent,
-      script: [
-        {
-          role: "主持人",
-          content: `大家好，欢迎收听本期播客。今天我们要分享一篇来自 ${
-            article.siteName || metadata.publisher || url.hostname
-          } 的文章《${
-            article.title || metadata.title || "未知标题"
-          }》。这篇文章大约需要 ${readingTime} 分钟阅读。`,
-        },
-        {
-          role: "主持人",
-          content:
-            article.excerpt ||
-            metadata.description ||
-            "这篇文章非常有趣，让我们一起来了解一下。",
-        },
-        {
-          role: "主持人",
-          content: "感谢收听，我们下期再见。",
-        },
-      ],
     };
 
     return Response.json(response);

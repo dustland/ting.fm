@@ -11,30 +11,39 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useSettingsStore } from "@/stores/settings"
-import { Icons } from "./icons"
+import { useSettingStore } from "@/store/setting";
+import { Icons } from "./icons";
 
 export function SettingsDialog() {
-  const { podcastSettings, updatePodcastSettings, resetPodcastSettings } = useSettingsStore()
-  const [localSettings, setLocalSettings] = React.useState(podcastSettings)
-  const [open, setOpen] = React.useState(false)
+  const { podcastSettings, updatePodcastSettings, resetPodcastSettings } =
+    useSettingStore();
+  const [localSettings, setLocalSettings] = React.useState(podcastSettings);
+  const [open, setOpen] = React.useState(false);
 
   const handleSave = () => {
-    updatePodcastSettings(localSettings)
-    setOpen(false)
-  }
+    updatePodcastSettings(localSettings);
+    setOpen(false);
+  };
 
   const handleReset = () => {
-    resetPodcastSettings()
-    setLocalSettings(podcastSettings)
-  }
+    resetPodcastSettings();
+    setLocalSettings(podcastSettings);
+  };
+
+  const updateHostPersonality = (index: number, personality: string) => {
+    setLocalSettings({
+      ...localSettings,
+      hosts: localSettings.hosts.map((host, i) =>
+        i === index ? { ...host, personality } : host
+      ),
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon">
-          <Icons.Settings className="h-5 w-5" />
-          <span className="sr-only">设置</span>
+          <Icons.settings className="h-5 w-5" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
@@ -57,55 +66,24 @@ export function SettingsDialog() {
               onChange={(e) =>
                 setLocalSettings({
                   ...localSettings,
-                  duration: parseInt(e.target.value)
+                  duration: parseInt(e.target.value),
                 })
               }
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="host1" className="text-right">
-              男主持人风格
-            </Label>
-            <Input
-              id="host1"
-              className="col-span-3"
-              value={localSettings.hosts.host1.personality}
-              onChange={(e) =>
-                setLocalSettings({
-                  ...localSettings,
-                  hosts: {
-                    ...localSettings.hosts,
-                    host1: {
-                      ...localSettings.hosts.host1,
-                      personality: e.target.value
-                    }
-                  }
-                })
-              }
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="host2" className="text-right">
-              女主持人风格
-            </Label>
-            <Input
-              id="host2"
-              className="col-span-3"
-              value={localSettings.hosts.host2.personality}
-              onChange={(e) =>
-                setLocalSettings({
-                  ...localSettings,
-                  hosts: {
-                    ...localSettings.hosts,
-                    host2: {
-                      ...localSettings.hosts.host2,
-                      personality: e.target.value
-                    }
-                  }
-                })
-              }
-            />
-          </div>
+          {localSettings.hosts.map((host, index) => (
+            <div key={host.id} className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor={host.id} className="text-right">
+                {host.gender === "male" ? "男" : "女"}主持人风格
+              </Label>
+              <Input
+                id={host.id}
+                className="col-span-3"
+                value={host.personality}
+                onChange={(e) => updateHostPersonality(index, e.target.value)}
+              />
+            </div>
+          ))}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={handleReset}>
@@ -115,5 +93,5 @@ export function SettingsDialog() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

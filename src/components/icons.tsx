@@ -34,4 +34,7 @@ export const Icons = {
   bot: LucideIcons.Bot,
   speaker: LucideIcons.Speaker,
   users: LucideIcons.Users,
+  chevronRight: LucideIcons.ChevronRight,
+  volume2: LucideIcons.Volume2,
+  square: LucideIcons.Square,
 }

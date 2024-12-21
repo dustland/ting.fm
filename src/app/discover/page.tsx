@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 
-interface Podcast {
+interface Pod {
   id: string
   title: string
   description: string
@@ -16,7 +16,7 @@ interface Podcast {
 }
 
 // 模拟数据
-const mockPodcasts: Podcast[] = [
+const mockPods: Pod[] = [
   {
     id: "1",
     title: "人工智能发展趋势分析",
@@ -47,11 +47,11 @@ export default function DiscoverPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isPlaying, setIsPlaying] = useState<string | null>(null)
 
-  const filteredPodcasts = mockPodcasts.filter(
-    (podcast) =>
-      podcast.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      podcast.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      podcast.tags.some((tag) =>
+  const filteredPods = mockPods.filter(
+    (pod) =>
+      pod.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pod.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pod.tags.some((tag) =>
         tag.toLowerCase().includes(searchTerm.toLowerCase())
       )
   )
@@ -85,17 +85,17 @@ export default function DiscoverPage() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredPodcasts.map((podcast) => (
-            <Card key={podcast.id}>
+          {filteredPods.map((pod) => (
+            <Card key={pod.id}>
               <CardHeader>
-                <CardTitle>{podcast.title}</CardTitle>
+                <CardTitle>{pod.title}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {podcast.description}
+                  {pod.description}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {podcast.tags.map((tag) => (
+                  {pod.tags.map((tag) => (
                     <span
                       key={tag}
                       className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium"
@@ -108,17 +108,17 @@ export default function DiscoverPage() {
               <CardFooter className="flex justify-between">
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <Icons.clock className="h-4 w-4" />
-                  <span>{podcast.duration}</span>
+                  <span>{pod.duration}</span>
                   <span>•</span>
-                  <span>{podcast.createdAt}</span>
+                  <span>{pod.createdAt}</span>
                 </div>
                 <div className="flex space-x-2">
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handlePlay(podcast.id)}
+                    onClick={() => handlePlay(pod.id)}
                   >
-                    {isPlaying === podcast.id ? (
+                    {isPlaying === pod.id ? (
                       <Icons.pause className="h-4 w-4" />
                     ) : (
                       <Icons.play className="h-4 w-4" />
@@ -127,7 +127,7 @@ export default function DiscoverPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleShare(podcast.id)}
+                    onClick={() => handleShare(pod.id)}
                   >
                     <Icons.share className="h-4 w-4" />
                   </Button>

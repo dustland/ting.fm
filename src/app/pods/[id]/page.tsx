@@ -24,6 +24,7 @@ export default function PodPage({ params }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingPodcast, setIsGeneratingPodcast] = useState(false);
   const { podcastSettings } = useSettingStore();
   const { pod, updateDialogue } = usePods(id);
   const { append } = usePodChat({
@@ -45,7 +46,7 @@ export default function PodPage({ params }: Props) {
     }
   }, [pod, router]);
 
-  const handleGenerate = async () => {
+  const handleGenerateDialogues = async () => {
     if (!pod?.source) return;
 
     try {
@@ -66,7 +67,72 @@ export default function PodPage({ params }: Props) {
     }
   };
 
-  const isDisabled = !pod?.source || isLoading;
+  const handleGeneratePodcast = async () => {
+    if (!pod?.dialogues?.length) {
+      toast({
+        title: "错误",
+        description: "没有对话内容可以生成",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsGeneratingPodcast(true);
+      const audioPromises = pod.dialogues.map(async (dialogue) => {
+        const response = await fetch("/api/tts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: dialogue.content,
+            voice: dialogue.host === "host1" ? "onyx" : "nova",
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`生成音频失败: ${dialogue.content.slice(0, 20)}...`);
+        }
+
+        return await response.blob();
+      });
+
+      // Generate all audio files
+      const audioBlobs = await Promise.all(audioPromises);
+
+      // Create audio elements and play them in sequence
+      const audioElements = audioBlobs.map((blob) => {
+        const audio = new Audio(URL.createObjectURL(blob));
+        return audio;
+      });
+
+      // Download as a single file
+      const combinedBlob = new Blob(audioBlobs, { type: "audio/mpeg" });
+      const url = URL.createObjectURL(combinedBlob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${pod.title || "podcast"}.mp3`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "成功",
+        description: "播客已生成并开始下载",
+      });
+    } catch (error) {
+      toast({
+        title: "错误",
+        description: error instanceof Error ? error.message : "生成播客失败",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPodcast(false);
+    }
+  };
 
   const handleEdit = async (dialogueId: string, content: string) => {
     try {
@@ -113,13 +179,18 @@ export default function PodPage({ params }: Props) {
     }
   };
 
+  const isDisabled = !pod?.source || isLoading;
+  const canGeneratePodcast = pod?.dialogues && pod.dialogues.length > 0;
+
   return (
     <div className="h-[calc(100vh-var(--navbar-height))] container flex flex-col py-2">
       <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col min-h-0">
         <div className="flex-none">
-          <h2 className="text-2xl font-bold tracking-tight">
-            {pod?.title || pod?.source?.metadata?.title || "未命名播客"}
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold tracking-tight">
+              {pod?.title || pod?.source?.metadata?.title || "未命名播客"}
+            </h2>
+          </div>
           {pod?.source && (
             <div className="flex flex-col space-y-2 mt-2">
               <div className="flex items-center justify-between">
@@ -150,14 +221,24 @@ export default function PodPage({ params }: Props) {
                     </Badge>
                   )}
                 </div>
-                <Button
-                  onClick={handleGenerate}
-                  disabled={isDisabled}
-                  className="flex items-center gap-2"
-                >
-                  <Icons.wand className="h-4 w-4" />
-                  {isLoading ? "生成中..." : "生成对话"}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={handleGenerateDialogues}
+                    disabled={isDisabled}
+                    className="flex items-center gap-2"
+                  >
+                    <Icons.wand className="h-4 w-4" />
+                    {isLoading ? "生成中..." : "生成对话"}
+                  </Button>
+                  <Button
+                    onClick={handleGeneratePodcast}
+                    disabled={!canGeneratePodcast || isGeneratingPodcast}
+                    className="flex items-center gap-2"
+                  >
+                    <Icons.podcast className="h-4 w-4" />
+                    {isGeneratingPodcast ? "生成中..." : "生成播客"}
+                  </Button>
+                </div>
               </div>
             </div>
           )}

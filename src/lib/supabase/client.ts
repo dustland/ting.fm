@@ -1,17 +1,30 @@
-import { Attachment } from '@/types';
-import { createBrowserClient } from '@supabase/ssr';
-import { nanoid } from 'nanoid';
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { nanoid } from "nanoid";
 
-export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error("Missing Supabase environment variables");
+}
+
+export const createClient = () =>
+  createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  });
+
+export interface Attachment {
+  url: string;
+  contentType: string;
+  name: string;
 }
 
 export async function uploadFile(
   file: File,
-  bucket = 'attachments'
+  bucket = "attachments"
 ): Promise<Attachment> {
   const supabase = createClient();
 
@@ -19,16 +32,20 @@ export async function uploadFile(
   const MAX_SIZE = 10 * 1024 * 1024; // 10MB
   if (file.size > MAX_SIZE) {
     throw new Error(
-      `File size exceeds 10MB limit. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`
+      `File size exceeds 10MB limit. Current size: ${(
+        file.size /
+        1024 /
+        1024
+      ).toFixed(2)}MB`
     );
   }
 
-  const ext = file.name.split('.').pop()?.toLowerCase();
+  const ext = file.name.split(".").pop()?.toLowerCase();
   // Validate file extension
-  const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx'];
+  const allowedExtensions = ["jpg", "jpeg", "png", "gif", "pdf", "doc", "docx"];
   if (!ext || !allowedExtensions.includes(ext)) {
     throw new Error(
-      `Invalid file type. Allowed types: ${allowedExtensions.join(', ')}`
+      `Invalid file type. Allowed types: ${allowedExtensions.join(", ")}`
     );
   }
 
@@ -38,7 +55,7 @@ export async function uploadFile(
     const { data, error } = await supabase.storage
       .from(bucket)
       .upload(path, file, {
-        cacheControl: '3600',
+        cacheControl: "3600",
         upsert: false,
       });
 
@@ -56,14 +73,14 @@ export async function uploadFile(
       name: file.name,
     };
   } catch (error) {
-    console.error('Error uploading file:', error);
+    console.error("Error uploading file:", error);
     throw new Error(
-      error instanceof Error ? error.message : 'Failed to upload file'
+      error instanceof Error ? error.message : "Failed to upload file"
     );
   }
 }
 
-export async function deleteFile(path: string, bucket = 'attachments') {
+export async function deleteFile(path: string, bucket = "attachments") {
   const supabase = createClient();
   const { error } = await supabase.storage.from(bucket).remove([path]);
 

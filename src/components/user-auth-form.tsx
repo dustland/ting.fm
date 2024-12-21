@@ -15,11 +15,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Icons } from "@/components/icons";
 import { createClient } from "@/lib/supabase/client";
 
-interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
-
 type FormData = z.infer<typeof userAuthSchema>;
 
-export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
+export function UserAuthForm({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   const {
     register,
     handleSubmit,

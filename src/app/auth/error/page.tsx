@@ -12,15 +12,9 @@ import {
 } from '@/components/ui/card';
 import React, { Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { Metadata } from "next";
+import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
-
-export const metadata: Metadata = {
-  title: "认证错误 - Ting.fm",
-  description: "认证过程中出现错误",
-};
 
 const errorMessages: { [key: string]: string } = {
   default: 'An unexpected error occurred during authentication.',

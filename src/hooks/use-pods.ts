@@ -1,17 +1,20 @@
 import { useCallback } from "react";
 import { nanoid } from "nanoid";
-import { usePodStore, type Pod } from "@/store/pod";
+import { Dialogue, PodSource, usePodStore, type Pod } from "@/store/pod";
 
 export function usePods(podId?: string) {
   const { pods, addPod, updatePod, deletePod, getPod } = usePodStore();
 
   const createPod = useCallback(
-    (title: string, source: string) => {
+    (title: string, source: PodSource) => {
+      const id = nanoid(6);
+      console.log(`[Pods] Creating new pod with id: ${id}, title: ${title}`);
       const newPod: Pod = {
-        id: nanoid(10),
+        id,
         url: "",
         title,
         source,
+        dialogues: [],
         createdAt: new Date().toISOString(),
         status: "draft",
       };
@@ -22,7 +25,7 @@ export function usePods(podId?: string) {
   );
 
   const saveSource = useCallback(
-    (id: string, source: string) => {
+    (id: string, source: PodSource) => {
       updatePod(id, {
         source,
         updatedAt: new Date().toISOString(),
@@ -58,17 +61,17 @@ export function usePods(podId?: string) {
         const pod = getPod(id);
         if (!pod) return;
 
-        const dialogue = pod.dialogue || [];
-        const entryIndex = dialogue.findIndex((m) => m.id === dialogueId);
-        const updatedDialogue =
+        const dialogues = pod.dialogues || [];
+        const entryIndex = dialogues.findIndex((m) => m.id === dialogueId);
+        const updatedDialogues: Dialogue[] =
           entryIndex >= 0
-            ? dialogue.map((m, i) =>
+            ? dialogues.map((m, i) =>
                 i === entryIndex
                   ? { ...m, content, host, createdAt: new Date().toISOString() }
                   : m
               )
             : [
-                ...dialogue,
+                ...dialogues,
                 {
                   id: dialogueId,
                   content,
@@ -77,7 +80,7 @@ export function usePods(podId?: string) {
                 },
               ];
 
-        updatePod(id, { dialogue: updatedDialogue });
+        updatePod(id, { dialogues: updatedDialogues });
       },
       [getPod, updatePod]
     ),
@@ -87,9 +90,9 @@ export function usePods(podId?: string) {
         const pod = getPod(id);
         if (!pod) return;
 
-        const dialogue = pod.dialogue || [];
+        const dialogues = pod.dialogues || [];
         updatePod(id, {
-          dialogue: dialogue.filter((m) => m.id !== dialogueId),
+          dialogues: dialogues.filter((m) => m.id !== dialogueId),
         });
       },
       [getPod, updatePod]

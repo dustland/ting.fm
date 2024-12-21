@@ -3,54 +3,44 @@
 import { useState } from "react"
 import { Icons } from "@/components/icons"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Chat } from "@/components/chat"
-import { Message } from "ai"
-import { TextToScriptRequest } from "@/app/api/text/route"
+import { Textarea } from "@/components/ui/textarea";
+import { PodSource } from "@/store/pod";
 
 interface TextInputProps {
-  onSubmit: (content: string) => Promise<void>
-  isLoading: boolean
+  onSubmit: (content: PodSource) => Promise<void>;
+  isLoading: boolean;
 }
 
 export function TextInput({ onSubmit, isLoading }: TextInputProps) {
-  const [text, setText] = useState("")
-  const [error, setError] = useState("")
+  const [text, setText] = useState("");
+  const [error, setError] = useState("");
 
   const handleSubmit = async () => {
     if (!text.trim()) {
-      setError("请输入内容")
-      return
+      setError("请输入内容");
+      return;
     }
 
     if (text.length < 50) {
-      setError("内容太短，请至少输入 50 个字符")
-      return
+      setError("内容太短，请至少输入 50 个字符");
+      return;
     }
 
     try {
-      setError("")
-      const response = await fetch("/api/text", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      setError("");
+      await onSubmit({
+        type: "text",
+        metadata: {
+          title: text.slice(0, 20),
+          description: text.slice(0, 100),
         },
-        body: JSON.stringify({
-          text,
-        } as TextToScriptRequest),
-      })
-
-      if (!response.ok) {
-        throw new Error("API request failed")
-      }
-
-      const data = await response.json()
-      await onSubmit(JSON.stringify(data))
+        content: text,
+      });
     } catch (err) {
-      setError("处理内容时出错，请重试")
-      console.error("Error processing text:", err)
+      setError("处理内容时出错，请重试");
+      console.error("Error processing text:", err);
     }
-  }
+  };
 
   return (
     <div className="space-y-4">
@@ -79,5 +69,5 @@ export function TextInput({ onSubmit, isLoading }: TextInputProps) {
         )}
       </Button>
     </div>
-  )
+  );
 }

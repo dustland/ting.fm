@@ -5,10 +5,11 @@ import { Icons } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CrawlRequest } from "@/app/api/scrape/route"
+import { PodSource } from "@/store/pod";
 
 interface UrlInputProps {
-  onSubmit: (content: string) => Promise<void>
-  isLoading: boolean
+  onSubmit: (content: PodSource) => Promise<void>;
+  isLoading: boolean;
 }
 
 export function UrlInput({ onSubmit, isLoading }: UrlInputProps) {
@@ -44,7 +45,7 @@ export function UrlInput({ onSubmit, isLoading }: UrlInputProps) {
       }
 
       const data = await response.json();
-      await onSubmit(JSON.stringify(data));
+      await onSubmit(data);
     } catch (err) {
       if (err instanceof TypeError && err.message.includes("URL")) {
         setError("请输入有效的 URL");
@@ -59,7 +60,7 @@ export function UrlInput({ onSubmit, isLoading }: UrlInputProps) {
 
   return (
     <div className="space-y-4 w-full">
-      <div className="space-y-2">
+      <div className="flex items-center space-y-2 min-h-32">
         <Input
           type="url"
           placeholder="输入文章或博客的 URL"
@@ -76,7 +77,11 @@ export function UrlInput({ onSubmit, isLoading }: UrlInputProps) {
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
 
-      <Button onClick={handleSubmit} disabled={isLoading || isCrawling}>
+      <Button
+        onClick={handleSubmit}
+        disabled={isLoading || isCrawling}
+        className="w-full"
+      >
         {isCrawling || isLoading ? (
           <>
             <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />

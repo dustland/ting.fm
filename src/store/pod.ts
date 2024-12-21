@@ -1,17 +1,36 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { nanoid } from "nanoid";
+
+export interface Dialogue {
+  id: string;
+  host: string;
+  content: string;
+}
+
+export interface PodSource {
+  type: "url" | "file" | "text" | "channel";
+  content: string;
+  metadata?: {
+    title: string;
+    description?: string;
+    author?: string;
+    publishDate?: string;
+    url?: string;
+    siteName?: string;
+    favicon?: string;
+    image?: string;
+    readingTime?: number;
+    wordCount?: number;
+  };
+}
 
 export interface Pod {
   id: string;
   title: string;
   url: string;
-  source?: string;
-  dialogue?: Array<{
-    id: string;
-    content: string;
-    createdAt: string;
-    host: string;
-  }>;
+  source?: PodSource;
+  dialogues: Dialogue[];
   createdAt: string;
   updatedAt?: string;
   status: "draft" | "ready" | "published";
@@ -44,11 +63,26 @@ export const usePodStore = create<PodState>()(
       updatePod: (id, updates) =>
         set((state) => {
           const pod = state.pods[id];
-          if (!pod) return state;
+          if (!pod) {
+            console.warn(
+              "[PodStore] Attempted to update non-existent pod:",
+              id
+            );
+            return state;
+          }
+
+          console.log("[PodStore] Updating pod:", { id, updates });
+          const updatedPod = {
+            ...pod,
+            ...updates,
+            updatedAt: new Date().toISOString(),
+          };
+          console.log("[PodStore] Updated pod:", updatedPod);
+
           return {
             pods: {
               ...state.pods,
-              [id]: { ...pod, ...updates, updatedAt: new Date().toISOString() },
+              [id]: updatedPod,
             },
           };
         }),
@@ -78,29 +112,26 @@ export const usePodStore = create<PodState>()(
           const pod = state.pods[id];
           if (!pod) return state;
 
-          const dialogue = pod.dialogue || [];
-          const existingDialogueIndex = dialogue.findIndex(
+          const dialogues = pod.dialogues || [];
+          const existingDialogueIndex = dialogues.findIndex(
             (d) => d.id === dialogueId
           );
 
-          let newDialogue;
+          let newDialogues;
           if (existingDialogueIndex >= 0) {
-            // Update existing dialogue
-            newDialogue = [...dialogue];
-            newDialogue[existingDialogueIndex] = {
-              ...newDialogue[existingDialogueIndex],
+            newDialogues = [...dialogues];
+            newDialogues[existingDialogueIndex] = {
+              ...newDialogues[existingDialogueIndex],
               content,
               host,
             };
           } else {
-            // Add new dialogue
-            newDialogue = [
-              ...dialogue,
+            newDialogues = [
+              ...dialogues,
               {
                 id: dialogueId,
                 content,
                 host,
-                createdAt: new Date().toISOString(),
               },
             ];
           }
@@ -110,7 +141,7 @@ export const usePodStore = create<PodState>()(
               ...state.pods,
               [id]: {
                 ...pod,
-                dialogue: newDialogue,
+                dialogues: newDialogues,
                 updatedAt: new Date().toISOString(),
               },
             },
@@ -119,14 +150,14 @@ export const usePodStore = create<PodState>()(
       deleteDialogue: (id, dialogueId) =>
         set((state) => {
           const pod = state.pods[id];
-          if (!pod || !pod.dialogue) return state;
+          if (!pod || !pod.dialogues) return state;
 
           return {
             pods: {
               ...state.pods,
               [id]: {
                 ...pod,
-                dialogue: pod.dialogue.filter((d) => d.id !== dialogueId),
+                dialogues: pod.dialogues.filter((d) => d.id !== dialogueId),
                 updatedAt: new Date().toISOString(),
               },
             },

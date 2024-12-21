@@ -1,386 +1,270 @@
-"use client"
+"use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
-import { Icons } from "@/components/icons";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { DialogueLine } from "@/components/dialogue-line";
+import { Icons } from "@/components/icons";
 import { useToast } from "@/hooks/use-toast";
-import { useSettingStore } from "@/store/setting";
+import { usePodChat } from "@/hooks/use-chat";
 import { usePods } from "@/hooks/use-pods";
-import { useChat } from "@/hooks/use-chat";
-import { cn } from "@/lib/utils";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
-import { ScrollArea } from "@radix-ui/react-scroll-area";
+import { useSettingStore } from "@/store/setting";
+import { use } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
 
-export default function PodcastPage() {
-  const params = useParams();
+interface Props {
+  params: Promise<{ id: string }>;
+}
+
+export default function PodPage({ params }: Props) {
+  const { id } = use(params);
+  const router = useRouter();
   const { toast } = useToast();
   const { podcastSettings } = useSettingStore();
-  const id = params.id as string;
-  const generationStartedRef = useRef(false);
-  const dialogueMapRef = useRef<Map<number, string>>(new Map());
-  const { pod, updateDialogue, deleteDialogue, updatePod } = usePods(id);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [editingDialogueId, setEditingDialogueId] = useState<string | null>(
-    null
-  );
-  const [editingContent, setEditingContent] = useState("");
-  const [editingHost, setEditingHost] = useState("");
-  const { messages, append, isLoading } = useChat({
-    onFinish: () => {
-      dialogueMapRef.current.clear();
-      updatePod(id, { status: "ready" });
-      toast({
-        title: "生成完成",
-        description: "Pod对话已生成",
-      });
-      setIsGenerating(false);
-    },
+  const { pod } = usePods(id);
+  const { append, isLoading } = usePodChat({
+    podId: id,
+    options: podcastSettings,
     onError: (error) => {
       console.error(error);
-      dialogueMapRef.current.clear();
       toast({
-        title: "生成失败",
-        description: error instanceof Error ? error.message : "未知错误",
+        title: "对话生成失败",
+        description: "请稍后再试",
         variant: "destructive",
       });
-      setIsGenerating(false);
     },
   });
 
-  const [ttsStates, setTtsStates] = useState<Record<string, { isLoading: boolean; isPlaying: boolean }>>({});
-  const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
-
   useEffect(() => {
-    if (!messages.length) return;
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage.role === "assistant") {
-      const regex = /\[\[(host[12])\]\](.*?)\]\]/g;
-      let match;
-      let index = 0;
-      const newDialogues: Array<{
-        index: number;
-        hostNum: string;
-        content: string;
-      }> = [];
-
-      while ((match = regex.exec(lastMessage.content)) !== null) {
-        const [, hostNum, content] = match;
-        newDialogues.push({ index, hostNum, content: content.trim() });
-        index++;
-      }
-
-      newDialogues.forEach(({ index, hostNum, content }) => {
-        const existingContent = dialogueMapRef.current.get(index);
-        if (existingContent !== content) {
-          dialogueMapRef.current.set(index, content);
-          const dialogueId = `dialogue-${index}`;
-          updateDialogue(
-            id,
-            dialogueId,
-            content,
-            hostNum === "host1" ? "host1" : "host2"
-          );
-        }
-      });
+    if (!pod) {
+      router.push("/pods");
     }
-  }, [messages, id, updateDialogue]);
+  }, [pod, router]);
 
-  const handleGenerate = useCallback(async () => {
-    if (!pod?.source) {
-      toast({
-        title: "无内容",
-        description: "请等待内容抓取完成",
-      });
-      return;
-    }
-
-    dialogueMapRef.current.clear();
-    setIsGenerating(true);
-    toast({
-      title: "生成对话",
-      description: "正在生成播客对话内容...",
-    });
+  const handleGenerate = async () => {
+    if (!pod?.source) return;
 
     try {
-      console.log("pod.source", pod.source);
-      await append(
-        {
-          role: "user",
-          content:
-            "请根据如下原始材料为我生成一个生动的播客脚本:\n\n" + pod.source,
-        },
-        {
-          body: {
-            source: pod.source,
-            format: "podcast",
-            podcastOptions: podcastSettings,
-          },
-        }
-      );
+      await append({
+        role: "user",
+        content: pod.source.content,
+      });
     } catch (error) {
-      console.error(error);
+      console.error("Error generating dialogue:", error);
       toast({
-        title: "生成失败",
-        description: error instanceof Error ? error.message : "未知错误",
-        variant: "destructive",
-      });
-      setIsGenerating(false);
-    }
-  }, [pod?.source, podcastSettings, append, toast]);
-
-  useEffect(() => {
-    if (
-      pod?.source &&
-      (!pod.dialogue || pod.dialogue.length === 0) &&
-      !generationStartedRef.current &&
-      !isGenerating
-    ) {
-      generationStartedRef.current = true;
-      handleGenerate();
-    }
-  }, [pod?.source, pod?.dialogue, handleGenerate, isGenerating]);
-
-  const handleEditDialogue = (
-    dialogueId: string,
-    content: string,
-    host: string
-  ) => {
-    updateDialogue(id, dialogueId, content, host);
-    setEditingDialogueId(null);
-    setEditingContent("");
-    setEditingHost("");
-  };
-
-  const handleDeleteDialogue = (dialogueId: string) => {
-    deleteDialogue(id, dialogueId);
-  };
-
-  const handleTTS = async (dialogueId: string, text: string) => {
-    try {
-      setTtsStates(prev => ({
-        ...prev,
-        [dialogueId]: { isLoading: true, isPlaying: false }
-      }));
-
-      const response = await fetch("/api/tts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text, voice: "alloy" }),
-      });
-
-      if (!response.ok) {
-        throw new Error("TTS request failed");
-      }
-
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-      
-      // Clean up previous audio instance if it exists
-      if (audioRefs.current[dialogueId]) {
-        audioRefs.current[dialogueId].pause();
-        URL.revokeObjectURL(audioRefs.current[dialogueId].src);
-      }
-      
-      audioRefs.current[dialogueId] = audio;
-      
-      audio.addEventListener('ended', () => {
-        setTtsStates(prev => ({
-          ...prev,
-          [dialogueId]: { isLoading: false, isPlaying: false }
-        }));
-        URL.revokeObjectURL(audioUrl);
-        delete audioRefs.current[dialogueId];
-      });
-
-      audio.addEventListener('playing', () => {
-        setTtsStates(prev => ({
-          ...prev,
-          [dialogueId]: { isLoading: false, isPlaying: true }
-        }));
-      });
-
-      audio.play();
-    } catch (error) {
-      console.error(error);
-      setTtsStates(prev => ({
-        ...prev,
-        [dialogueId]: { isLoading: false, isPlaying: false }
-      }));
-      toast({
-        title: "语音合成失败",
-        description: error instanceof Error ? error.message : "未知错误",
+        title: "对话生成失败",
+        description: "请稍后再试",
         variant: "destructive",
       });
     }
   };
 
-  const stopTTS = (dialogueId: string) => {
-    const audio = audioRefs.current[dialogueId];
-    if (audio) {
-      audio.pause();
-      URL.revokeObjectURL(audio.src);
-      delete audioRefs.current[dialogueId];
-      setTtsStates(prev => ({
-        ...prev,
-        [dialogueId]: { isLoading: false, isPlaying: false }
-      }));
+  const isDisabled = !pod?.source || isLoading;
+
+  const getSourceTypeIcon = (type: string) => {
+    switch (type) {
+      case "url":
+        return <Icons.link className="h-4 w-4" />;
+      case "file":
+        return <Icons.upload className="h-4 w-4" />;
+      case "text":
+        return <Icons.text className="h-4 w-4" />;
+      case "channel":
+        return <Icons.sparkles className="h-4 w-4 text-emerald-500" />;
+      default:
+        return <Icons.text className="h-4 w-4" />;
+    }
+  };
+
+  const getSourceTypeText = (type: string) => {
+    switch (type) {
+      case "url":
+        return "网页";
+      case "file":
+        return "文件";
+      case "text":
+        return "文本";
+      case "channel":
+        return "主动探寻";
+      default:
+        return "文本";
     }
   };
 
   return (
-    <div className="container mx-auto py-2">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon">
-            <Icons.ChevronLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="font-semibold">播客编辑</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline">预览</Button>
-          <Button
-            onClick={handleGenerate}
-            disabled={isGenerating || !pod?.source}
-          >
-            {isGenerating ? (
-              <>
-                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                生成中...
-              </>
-            ) : (
-              <>
-                <Icons.Wand className="mr-2 h-4 w-4" />
-                重新生成
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      <Card className="flex-1">
-        <CardHeader>
-          <CardTitle className="text-lg">播客对话</CardTitle>
-          <CardDescription>根据原始材料生成的播客内容</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[calc(100vh-16rem)]">
-            <div className="space-y-4">
-              {pod?.dialogue?.map((entry, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    "flex flex-col space-y-2 rounded-lg p-4",
-                    entry.host === "user" ? "bg-accent" : "border"
+    <div className="container py-6">
+      <div className="max-w-3xl mx-auto space-y-6">
+        <div className="flex justify-between items-start px-2">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold tracking-tight">
+              {pod?.title || pod?.source?.metadata?.title || "未命名播客"}
+            </h2>
+            {pod?.source && (
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Badge
+                    variant="outline"
+                    className="flex items-center space-x-2"
+                  >
+                    {getSourceTypeIcon(pod.source.type)}
+                    <span>{getSourceTypeText(pod.source.type)}</span>
+                  </Badge>
+                  {pod.source.metadata?.wordCount && (
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center space-x-2"
+                    >
+                      <Icons.text className="h-4 w-4" />
+                      <span>{pod.source.metadata.wordCount} 字</span>
+                    </Badge>
                   )}
-                >
-                  {editingDialogueId === entry.id ? (
-                    <div className="space-y-2">
-                      <Textarea
-                        value={editingContent}
-                        onChange={(e) => setEditingContent(e.target.value)}
-                        className="min-h-[100px]"
-                      />
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingDialogueId(null);
-                            setEditingContent("");
-                            setEditingHost("");
-                          }}
-                        >
-                          取消
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() =>
-                            handleEditDialogue(
-                              entry.id,
-                              editingContent,
-                              editingHost
-                            )
-                          }
-                        >
-                          保存
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback>
-                              {entry.host[0].toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm font-medium">
-                            {entry.host === "user" ? "主持人" : "嘉宾"}
-                          </span>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              const state = ttsStates[entry.id];
-                              if (state?.isPlaying) {
-                                stopTTS(entry.id);
-                              } else {
-                                handleTTS(entry.id, entry.content);
-                              }
-                            }}
-                          >
-                            {ttsStates[entry.id]?.isLoading ? (
-                              <Icons.Loader2 className="h-4 w-4 animate-spin" />
-                            ) : ttsStates[entry.id]?.isPlaying ? (
-                              <Icons.Square className="h-4 w-4" />
-                            ) : (
-                              <Icons.Volume2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setEditingDialogueId(entry.id);
-                              setEditingContent(entry.content);
-                              setEditingHost(entry.host);
-                            }}
-                          >
-                            <Icons.Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteDialogue(entry.id)}
-                          >
-                            <Icons.Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      <p className="text-sm leading-relaxed">{entry.content}</p>
-                    </>
+                  {pod.source.metadata?.readingTime && (
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center space-x-2"
+                    >
+                      <Icons.clock className="h-4 w-4" />
+                      <span>{pod.source.metadata.readingTime} 分钟</span>
+                    </Badge>
                   )}
                 </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+                {pod.source.metadata?.description && (
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {pod.source.metadata.description}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          <Button
+            onClick={handleGenerate}
+            disabled={isDisabled}
+            className="flex items-center gap-2"
+          >
+            <Icons.wand className="h-4 w-4" />
+            {isLoading ? "生成中..." : "生成对话"}
+          </Button>
+        </div>
+
+        <Tabs defaultValue="dialogues" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="dialogues" className="flex items-center gap-2">
+              <Icons.podcast className="h-4 w-4" />
+              播客对话
+            </TabsTrigger>
+            <TabsTrigger value="source" className="flex items-center gap-2">
+              <Icons.text className="h-4 w-4" />
+              原文内容
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="dialogues" className="mt-0">
+            <Card>
+              <CardContent className="p-4 space-y-4">
+                {pod?.dialogues?.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Icons.podcast className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                    <p>还没有对话内容</p>
+                    <p className="text-sm">点击"生成对话"开始创建</p>
+                  </div>
+                ) : (
+                  pod?.dialogues?.map((dialogue) => (
+                    <DialogueLine
+                      key={dialogue.id}
+                      id={dialogue.id}
+                      host={dialogue.host}
+                      content={dialogue.content}
+                    />
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="source" className="mt-0">
+            <Card>
+              <CardContent className="p-4">
+                {pod?.source ? (
+                  <div className="prose prose-sm max-w-none space-y-4">
+                    {pod.source.metadata && (
+                      <div className="flex items-start space-x-4 not-prose">
+                        {pod.source.metadata.image && (
+                          <div className="relative w-24 h-24 rounded-lg overflow-hidden shrink-0">
+                            <Image
+                              src={pod.source.metadata.image}
+                              alt={pod.source.metadata.title}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        )}
+                        <div className="space-y-2 flex-1 min-w-0">
+                          {pod.source.metadata.url && (
+                            <a
+                              href={pod.source.metadata.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-muted-foreground hover:text-foreground flex items-center space-x-2"
+                            >
+                              {pod.source.metadata.favicon && (
+                                <Image
+                                  src={pod.source.metadata.favicon}
+                                  alt=""
+                                  width={16}
+                                  height={16}
+                                  className="rounded"
+                                />
+                              )}
+                              <span className="truncate">
+                                {pod.source.metadata.siteName ||
+                                  pod.source.metadata.url}
+                              </span>
+                            </a>
+                          )}
+                          {pod.source.metadata.author && (
+                            <div className="text-sm text-muted-foreground flex items-center space-x-2">
+                              <Icons.users className="h-4 w-4" />
+                              <span>{pod.source.metadata.author}</span>
+                            </div>
+                          )}
+                          {pod.source.metadata.publishDate && (
+                            <div className="text-sm text-muted-foreground flex items-center space-x-2">
+                              <Icons.calendar className="h-4 w-4" />
+                              <span>
+                                {new Date(
+                                  pod.source.metadata.publishDate
+                                ).toLocaleDateString("zh-CN", {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                })}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    <div className="border-t pt-4">
+                      <p className="whitespace-pre-wrap">
+                        {pod.source.content}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Icons.text className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                    <p>没有原文内容</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

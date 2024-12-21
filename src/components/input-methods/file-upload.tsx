@@ -4,13 +4,14 @@ import { useCallback, useState } from "react"
 import { useDropzone } from "react-dropzone"
 import { Icons } from "@/components/icons"
 import { cn } from "@/lib/utils"
+import { PodSource } from "@/store/pod";
 
 interface FileUploadProps {
-  onSubmit: (content: string) => Promise<void>
-  isLoading: boolean
-  onFileSelect?: (file: File) => void
-  accept?: Record<string, string[]>
-  maxSize?: number
+  onSubmit: (source: PodSource) => Promise<void>;
+  isLoading: boolean;
+  onFileSelect?: (file: File) => void;
+  accept?: Record<string, string[]>;
+  maxSize?: number;
 }
 
 export function FileUpload({
@@ -39,7 +40,13 @@ export function FileUpload({
         }
         try {
           const text = await file.text()
-          await onSubmit(text)
+          await onSubmit({
+            type: "file",
+            metadata: {
+              title: file.name,
+            },
+            content: text,
+          });
         } catch (err) {
           setError("读取文件失败，请重试")
         }

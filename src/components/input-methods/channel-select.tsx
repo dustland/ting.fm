@@ -11,12 +11,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
+import { PodSource } from "@/store/pod";
 
 interface Channel {
-  id: string
-  name: string
-  description: string
-  keywords: string
+  id: string;
+  name: string;
+  description: string;
+  keywords: string;
 }
 
 const predefinedChannels: Channel[] = [
@@ -38,43 +39,46 @@ const predefinedChannels: Channel[] = [
     description: "商业新闻和市场分析",
     keywords: "创业,投资,市场分析,商业战略",
   },
-]
+];
 
 interface ChannelSelectProps {
-  onSubmit: (content: string) => Promise<void>
-  isLoading: boolean
+  onSubmit: (content: PodSource) => Promise<void>;
+  isLoading: boolean;
 }
 
 export function ChannelSelect({ onSubmit, isLoading }: ChannelSelectProps) {
-  const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null)
-  const [customKeywords, setCustomKeywords] = useState("")
-  const [error, setError] = useState("")
+  const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
+  const [customKeywords, setCustomKeywords] = useState("");
+  const [error, setError] = useState("");
 
   const handleSubmit = async () => {
     if (!selectedChannel) {
-      setError("请选择一个频道")
-      return
+      setError("请选择一个频道");
+      return;
     }
 
     try {
-      const content = JSON.stringify({
-        channel: selectedChannel,
-        customKeywords: customKeywords.trim() || undefined,
-      })
-      await onSubmit(content)
+      await onSubmit({
+        type: "channel",
+        metadata: {
+          title: selectedChannel.name,
+          description: selectedChannel.description,
+        },
+        content: customKeywords,
+      });
     } catch (err) {
-      setError("处理内容时出错，请重试")
+      setError("处理内容时出错，请重试");
     }
-  }
+  };
 
   return (
     <div className="space-y-4">
       <div className="space-y-2">
         <Select
           onValueChange={(value) => {
-            const channel = predefinedChannels.find((c) => c.id === value)
-            setSelectedChannel(channel || null)
-            setError("")
+            const channel = predefinedChannels.find((c) => c.id === value);
+            setSelectedChannel(channel || null);
+            setError("");
           }}
           disabled={isLoading}
         >
@@ -125,5 +129,5 @@ export function ChannelSelect({ onSubmit, isLoading }: ChannelSelectProps) {
         )}
       </Button>
     </div>
-  )
+  );
 }

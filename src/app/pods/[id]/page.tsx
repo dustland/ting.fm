@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { usePodChat } from "@/hooks/use-chat";
 import { usePods } from "@/hooks/use-pods";
 import { useSettingStore } from "@/store/setting";
-import { use } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,9 +23,10 @@ export default function PodPage({ params }: Props) {
   const { id } = use(params);
   const router = useRouter();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
   const { podcastSettings } = useSettingStore();
-  const { pod } = usePods(id);
-  const { append, isLoading } = usePodChat({
+  const { pod, updateDialogue } = usePods(id);
+  const { append } = usePodChat({
     podId: id,
     options: podcastSettings,
     onError: (error) => {
@@ -49,6 +49,7 @@ export default function PodPage({ params }: Props) {
     if (!pod?.source) return;
 
     try {
+      setIsLoading(true);
       await append({
         role: "user",
         content: pod.source.content,
@@ -60,10 +61,27 @@ export default function PodPage({ params }: Props) {
         description: "请稍后再试",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const isDisabled = !pod?.source || isLoading;
+
+  const handleEdit = async (dialogueId: string, content: string) => {
+    try {
+      const dialogue = pod?.dialogues?.find((d) => d.id === dialogueId);
+      if (!dialogue) throw new Error("对话不存在");
+
+      updateDialogue(id, dialogueId, content, dialogue.host);
+    } catch (error) {
+      toast({
+        title: "错误",
+        description: error instanceof Error ? error.message : "更新对话失败",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getSourceTypeIcon = (type: string) => {
     switch (type) {
@@ -92,28 +110,6 @@ export default function PodPage({ params }: Props) {
         return "主动探寻";
       default:
         return "文本";
-    }
-  };
-
-  const handleEdit = async (id: string, content: string) => {
-    try {
-      const response = await fetch(`/api/pods/${params.id}/dialogues/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ content }),
-      });
-
-      if (!response.ok) {
-        throw new Error("更新对话失败");
-      }
-    } catch (error) {
-      toast({
-        title: "错误",
-        description: error instanceof Error ? error.message : "更新对话失败",
-        variant: "destructive",
-      });
     }
   };
 

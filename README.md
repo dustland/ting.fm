@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ting.fm
 
-## Getting Started
+一个基于 AI 的播客生成器，可以将任何文本内容转换成对话形式的播客。
 
-First, run the development server:
+## 特性
+
+- 支持多种内容来源：URL、文本、文件
+- 基于 GPT-4 的智能对话生成
+- 使用 OpenAI TTS 生成自然的语音
+- 实时编辑和预览对话内容
+- 本地存储，随时保存进度
+- 美观的用户界面，支持深色模式
+
+## 技术栈
+
+- Next.js 15 (App Router)
+- TailwindCSS + Shadcn/UI
+- Zustand 状态管理
+- TypeScript
+- Railway.app 部署
+
+## 开发
+
+### 环境要求
+
+- Node.js >= 18
+- PNPM
+- OpenAI API Key
+
+### 安装
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# 安装依赖
+pnpm install
+
+# 配置环境变量
+cp .env.example .env.local
+# 编辑 .env.local，填入你的 OpenAI API Key
+
+# 启动开发服务器
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 项目结构
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+  ├── app/              # Next.js 页面和路由
+  ├── components/       # React 组件
+  ├── hooks/           # 自定义 Hooks
+  ├── lib/             # 工具函数
+  ├── store/           # Zustand 状态管理
+  └── types/           # TypeScript 类型定义
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 开发规范
 
-## Learn More
+1. 使用 PNPM 作为包管理器
+2. 使用 Next.js 15 App Router，路由默认为异步
+3. 使用 Shadcn UI 组件（通过 `npx shadcn@latest add` 安装）
+4. 使用 Zustand 进行状态管理
+5. 使用 Lucide Icons 作为图标库
+6. 代码和注释使用英文，UI 文本使用中文
 
-To learn more about Next.js, take a look at the following resources:
+## 许可证
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT

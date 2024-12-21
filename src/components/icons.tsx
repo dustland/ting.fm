@@ -39,6 +39,7 @@ import {
   Moon,
   Laptop,
   LogOut,
+  GraduationCap,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -113,4 +114,7 @@ export const Icons = {
       <path d="M1 1h22v22H1z" fill="none" />
     </svg>
   ),
+  graduationCap: GraduationCap,
+  fileText: FileText,
+  radio: Radio,
 } as const;

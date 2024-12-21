@@ -98,13 +98,13 @@ export default function PodPage({ params }: Props) {
   return (
     <div className="container py-6">
       <div className="max-w-3xl mx-auto space-y-6">
-        <div className="flex justify-between items-start px-2">
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold tracking-tight">
-              {pod?.title || pod?.source?.metadata?.title || "未命名播客"}
-            </h2>
-            {pod?.source && (
-              <div className="flex flex-col space-y-2">
+        <div className="px-2">
+          <h2 className="text-2xl font-bold tracking-tight">
+            {pod?.title || pod?.source?.metadata?.title || "未命名播客"}
+          </h2>
+          {pod?.source && (
+            <div className="flex flex-col space-y-2 mt-2">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Badge
                     variant="outline"
@@ -132,22 +132,22 @@ export default function PodPage({ params }: Props) {
                     </Badge>
                   )}
                 </div>
-                {pod.source.metadata?.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {pod.source.metadata.description}
-                  </p>
-                )}
+                <Button
+                  onClick={handleGenerate}
+                  disabled={isDisabled}
+                  className="flex items-center gap-2"
+                >
+                  <Icons.wand className="h-4 w-4" />
+                  {isLoading ? "生成中..." : "生成对话"}
+                </Button>
               </div>
-            )}
-          </div>
-          <Button
-            onClick={handleGenerate}
-            disabled={isDisabled}
-            className="flex items-center gap-2"
-          >
-            <Icons.wand className="h-4 w-4" />
-            {isLoading ? "生成中..." : "生成对话"}
-          </Button>
+              {pod.source.metadata?.description && (
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {pod.source.metadata.description}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <Tabs defaultValue="dialogues" className="w-full">

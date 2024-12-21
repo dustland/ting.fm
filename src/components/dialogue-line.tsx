@@ -41,8 +41,9 @@ export function DialogueLine({
         throw new Error("TTS generation failed");
       }
 
-      const data = await response.json();
-      return data.url;
+      // Create a blob URL from the audio data
+      const blob = await response.blob();
+      return URL.createObjectURL(blob);
     } catch (error) {
       console.error("Error generating TTS:", error);
       toast({
@@ -103,33 +104,35 @@ export function DialogueLine({
       </Avatar>
       <div
         className={cn(
-          "flex flex-col gap-2 max-w-[80%]",
+          "flex flex-col max-w-[80%]",
           isHost1 ? "items-start" : "items-end"
         )}
       >
-        <div
-          className={cn(
-            "rounded-lg px-4 py-2",
-            isHost1 ? "bg-primary text-primary-foreground" : "bg-muted"
-          )}
-        >
-          {content}
+        <div className="flex items-center gap-2">
+          <div
+            className={cn(
+              "rounded-lg px-4 py-2",
+              isHost1 ? "bg-primary text-primary-foreground" : "bg-muted"
+            )}
+          >
+            {content}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            onClick={handlePlayTts}
+            disabled={ttsState.isLoading}
+          >
+            {ttsState.isLoading ? (
+              <Icons.spinner className="h-4 w-4 animate-spin" />
+            ) : ttsState.isPlaying ? (
+              <Icons.pause className="h-4 w-4" />
+            ) : (
+              <Icons.play className="h-4 w-4" />
+            )}
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={handlePlayTts}
-          disabled={ttsState.isLoading}
-        >
-          {ttsState.isLoading ? (
-            <Icons.spinner className="h-4 w-4 animate-spin" />
-          ) : ttsState.isPlaying ? (
-            <Icons.pause className="h-4 w-4" />
-          ) : (
-            <Icons.play className="h-4 w-4" />
-          )}
-        </Button>
       </div>
     </div>
   );

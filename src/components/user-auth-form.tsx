@@ -39,7 +39,6 @@ export function UserAuthForm({
     resolver: zodResolver(userAuthSchema),
   });
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
-  const [isGitHubLoading, setIsGitHubLoading] = React.useState<boolean>(false);
   const [isGoogleLoading, setIsGoogleLoading] = React.useState<boolean>(false);
   const [isResendingVerification, setIsResendingVerification] =
     React.useState<boolean>(false);
@@ -140,23 +139,17 @@ export function UserAuthForm({
     });
   };
 
-  const handleOAuthSignIn = async (provider: "github" | "google") => {
+  const handleOAuthSignIn = async (provider: "google") => {
     try {
-      if (provider === "github") {
-        setIsGitHubLoading(true);
-      } else {
-        setIsGoogleLoading(true);
-      }
+      setIsGoogleLoading(true);
 
       const supabase = await createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect || '/')}`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
+          redirectTo: `${
+            window.location.origin
+          }/auth/callback?next=${encodeURIComponent(redirect ?? "/")}`,
         },
       });
 
@@ -167,15 +160,13 @@ export function UserAuthForm({
       console.error(`Error signing in with ${provider}:`, error);
       toast({
         title: "登录失败",
-        description: `使用${provider === "google" ? "谷歌" : "GitHub"}登录失败，请重试。`,
+        description: `使用${
+          provider === "google" ? "谷歌" : "GitHub"
+        }登录失败，请重试。`,
         variant: "destructive",
       });
     } finally {
-      if (provider === "github") {
-        setIsGitHubLoading(false);
-      } else {
-        setIsGoogleLoading(false);
-      }
+      setIsGoogleLoading(false);
     }
   };
 
@@ -210,14 +201,10 @@ export function UserAuthForm({
       {showVerificationPrompt ? (
         <Card className="max-w-full mx-auto">
           <CardHeader className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800">
-              验证您的邮箱
-            </h2>
+            <h2 className="text-2xl font-bold text-gray-800">验证您的邮箱</h2>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-red-500 font-semibold mb-2">
-              您的邮箱尚未验证
-            </p>
+            <p className="text-red-500 font-semibold mb-2">您的邮箱尚未验证</p>
             <p className="text-gray-600">
               我们已经发送了一封验证邮件到您的邮箱。请查收并点击链接完成验证。
             </p>
@@ -249,7 +236,7 @@ export function UserAuthForm({
                   autoCapitalize="none"
                   autoComplete="email"
                   autoCorrect="off"
-                  disabled={isLoading || isGitHubLoading}
+                  disabled={isLoading}
                   {...register("email")}
                 />
                 {errors?.email && (
@@ -268,7 +255,8 @@ export function UserAuthForm({
                   type="password"
                   autoCapitalize="none"
                   autoComplete="current-password"
-                  disabled={isLoading || isGitHubLoading}
+                  autoCorrect="off"
+                  disabled={isLoading}
                   {...register("password")}
                 />
                 {errors?.password && (

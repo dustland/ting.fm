@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { useChat as useVercelChat, Message } from "ai/react";
 import { usePods } from "./use-pods";
 import { Dialogue } from "@/store/pod";
-import { nanoid } from "nanoid";
 import { PodcastSettings } from "@/store/setting";
+import { useToast } from "@/hooks/use-toast";
 
 interface UsePodChatOptions {
   podId: string;
@@ -13,6 +13,7 @@ interface UsePodChatOptions {
 
 export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
   const { updatePod } = usePods(podId);
+  const { toast } = useToast();
   const chat = useVercelChat({
     api: "/api/chat",
     body: {
@@ -20,23 +21,46 @@ export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
       podcastOptions: options,
     },
     onError,
+    onFinish: (message) => {
+      console.log("[Chat] Chat finished, final message:", message);
+      const dialogues = processDialogues(message.content);
+      if (dialogues.length === 0 && message.content.trim()) {
+        toast({
+          title: "对话格式错误",
+          description: `AI 回复的内容未包含正确的对话格式，请重试:\n\n${message.content.slice(
+            0,
+            100
+          )}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      console.log("[Chat] Updating pod with final dialogues:", {
+        podId,
+        dialogues,
+      });
+      updatePod(podId, {
+        dialogues,
+        status: "ready",
+      });
+    },
   });
 
   const processDialogues = (content: string): Dialogue[] => {
     console.log("[Chat] Processing dialogues from content:", content);
-    
+
     const dialogues: Dialogue[] = [];
-    const regex = /<(host[12])>(.*?)(?=<host[12]>|$)/gs;
+    const regex = /<([^>]+)>(.*?)(?=<[^>]+>|$)/gs;
     let match;
 
     while ((match = regex.exec(content)) !== null) {
-      const [, hostId, rawContent] = match;
-      if (hostId && rawContent) {
+      const [, hostName, rawContent] = match;
+      if (hostName && rawContent) {
         const cleanContent = rawContent.trim();
         if (cleanContent) {
           const dialogue = {
             id: `${Date.now()}-${dialogues.length}`,
-            host: hostId,
+            host: hostName,
             content: cleanContent,
           };
           console.log("[Chat] Created dialogue:", dialogue);
@@ -50,18 +74,29 @@ export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
 
   useEffect(() => {
     const lastMessage = chat.messages[chat.messages.length - 1];
-    console.log("[Chat] Last message:", lastMessage);
-    
-    if (lastMessage?.role === "assistant") {
-      console.log("[Chat] Processing assistant message");
+    if (lastMessage?.role === "assistant" && !chat.isLoading) {
+      console.log("[Chat] Processing streaming message");
       const dialogues = processDialogues(lastMessage.content);
-      console.log("[Chat] Updating pod with dialogues:", { podId, dialogues });
-      updatePod(podId, {
-        dialogues,
-        status: "ready",
-      });
+      if (dialogues.length === 0 && lastMessage.content.trim()) {
+        toast({
+          title: "对话格式错误",
+          description: "AI 回复的内容未包含正确的对话格式，请重试",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (dialogues.length > 0) {
+        console.log("[Chat] Updating pod with streaming dialogues:", {
+          podId,
+          dialogues,
+        });
+        updatePod(podId, {
+          dialogues,
+          status: "ready",
+        });
+      }
     }
-  }, [chat.messages, podId, updatePod]);
+  }, [chat.messages, podId, updatePod, chat.isLoading, toast]);
 
   return chat;
 }

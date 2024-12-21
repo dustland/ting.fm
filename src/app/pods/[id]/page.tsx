@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -27,6 +27,7 @@ export default function PodPage({ params }: Props) {
   const [isGeneratingPodcast, setIsGeneratingPodcast] = useState(false);
   const { podcastSettings } = useSettingStore();
   const { pod, updateDialogue } = usePods(id);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { append } = usePodChat({
     podId: id,
     options: podcastSettings,
@@ -45,6 +46,16 @@ export default function PodPage({ params }: Props) {
       router.push("/pods");
     }
   }, [pod, router]);
+
+  // Auto scroll to bottom when dialogues update
+  useEffect(() => {
+    if (scrollRef.current && pod?.dialogues?.length) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [pod?.dialogues]);
 
   const handleGenerateDialogues = async () => {
     if (!pod?.source) return;
@@ -96,7 +107,7 @@ export default function PodPage({ params }: Props) {
         }
 
         const data = await response.json();
-        
+
         // Update dialogue with audio URL
         await updateDialogue(id, dialogue.id, dialogue.content, dialogue.host);
         return {
@@ -110,7 +121,7 @@ export default function PodPage({ params }: Props) {
 
       // Update each dialogue with its audio URL
       for (const { url, dialogueId } of audioResults) {
-        const dialogue = pod.dialogues.find(d => d.id === dialogueId);
+        const dialogue = pod.dialogues.find((d) => d.id === dialogueId);
         if (dialogue) {
           await updateDialogue(id, dialogueId, dialogue.content, dialogue.host);
         }
@@ -300,6 +311,7 @@ export default function PodPage({ params }: Props) {
                                   src={pod.source.metadata.image}
                                   alt={pod.source.metadata.title}
                                   fill
+                                  sizes="24"
                                   className="object-cover"
                                 />
                               </div>

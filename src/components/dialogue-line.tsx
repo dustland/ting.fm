@@ -107,25 +107,26 @@ export function DialogueLine({
   return (
     <div
       className={cn(
-        "flex gap-4 p-4 rounded-lg",
+        "flex gap-3 p-3 rounded-lg items-start",
         host === "host1" ? "bg-muted/50" : "bg-background",
         className
       )}
     >
-      <Avatar>
-        <AvatarFallback>{host === "host1" ? "H1" : "H2"}</AvatarFallback>
+      <Avatar className="h-8 w-8 mt-1">
+        <AvatarFallback className="text-xs">{host === "host1" ? "H1" : "H2"}</AvatarFallback>
       </Avatar>
-      <div className="flex-1 space-y-2">
+      <div className="flex-1 min-w-0">
         {isEditing ? (
           <>
             <Textarea
               value={editedContent}
               onChange={(e) => setEditedContent(e.target.value)}
-              className="min-h-[100px]"
+              className="min-h-[100px] mb-2"
             />
             <div className="flex gap-2">
-              <Button onClick={handleEdit}>保存</Button>
+              <Button size="sm" onClick={handleEdit}>保存</Button>
               <Button
+                size="sm"
                 variant="outline"
                 onClick={() => {
                   setIsEditing(false);
@@ -138,32 +139,34 @@ export function DialogueLine({
           </>
         ) : (
           <>
-            <div className="flex items-center gap-2">
+            <p className="text-sm leading-6 break-words whitespace-pre-wrap">{content}</p>
+            <div className="flex items-center gap-1 mt-2">
               <Button
                 variant="ghost"
                 size="icon"
+                className="h-7 w-7"
                 onClick={togglePlayback}
                 disabled={ttsState.isLoading}
               >
                 {ttsState.isLoading ? (
-                  <Icons.spinner className="h-4 w-4 animate-spin" />
+                  <Icons.spinner className="h-3.5 w-3.5 animate-spin" />
                 ) : ttsState.isPlaying ? (
-                  <Icons.pause className="h-4 w-4" />
+                  <Icons.pause className="h-3.5 w-3.5" />
                 ) : (
-                  <Icons.play className="h-4 w-4" />
+                  <Icons.play className="h-3.5 w-3.5" />
                 )}
               </Button>
               {onEdit && (
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="h-7 w-7"
                   onClick={() => setIsEditing(true)}
                 >
-                  <Icons.edit className="h-4 w-4" />
+                  <Icons.edit className="h-3.5 w-3.5" />
                 </Button>
               )}
             </div>
-            <p className="text-sm leading-7">{content}</p>
           </>
         )}
       </div>

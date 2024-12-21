@@ -164,102 +164,104 @@ export default function PodPage({ params }: Props) {
 
           <TabsContent value="dialogues" className="mt-0">
             <Card>
-              <CardContent className="p-4 space-y-4">
-                {pod?.dialogues?.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Icons.podcast className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                    <p>还没有对话内容</p>
-                    <p className="text-sm">点击"生成对话"开始创建</p>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[calc(100vh-20rem)]">
+                  <div className="p-4 space-y-4">
+                    {pod?.dialogues?.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Icons.podcast className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                        <p>还没有对话内容</p>
+                        <p className="text-sm">点击"生成对话"开始创建</p>
+                      </div>
+                    ) : (
+                      pod?.dialogues?.map((dialogue) => (
+                        <DialogueLine
+                          key={dialogue.id}
+                          id={dialogue.id}
+                          host={dialogue.host}
+                          content={dialogue.content}
+                        />
+                      ))
+                    )}
                   </div>
-                ) : (
-                  pod?.dialogues?.map((dialogue) => (
-                    <DialogueLine
-                      key={dialogue.id}
-                      id={dialogue.id}
-                      host={dialogue.host}
-                      content={dialogue.content}
-                    />
-                  ))
-                )}
+                </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="source" className="mt-0">
             <Card>
-              <CardContent className="p-4">
-                {pod?.source ? (
-                  <div className="prose prose-sm max-w-none space-y-4">
-                    {pod.source.metadata && (
-                      <div className="flex items-start space-x-4 not-prose">
-                        {pod.source.metadata.image && (
-                          <div className="relative w-24 h-24 rounded-lg overflow-hidden shrink-0">
-                            <Image
-                              src={pod.source.metadata.image}
-                              alt={pod.source.metadata.title}
-                              fill
-                              className="object-cover"
-                            />
+              <CardContent className="p-0">
+                <ScrollArea className="h-[calc(100vh-20rem)]">
+                  <div className="p-4">
+                    {pod?.source ? (
+                      <div className="prose prose-sm max-w-none space-y-4">
+                        {pod.source.metadata && (
+                          <div className="flex items-start space-x-4 not-prose">
+                            {pod.source.metadata.image && (
+                              <div className="relative w-24 h-24 rounded-lg overflow-hidden shrink-0">
+                                <Image
+                                  src={pod.source.metadata.image}
+                                  alt={pod.source.metadata.title}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0 space-y-1">
+                              {pod.source.metadata.url && (
+                                <a
+                                  href={pod.source.metadata.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm font-medium hover:underline flex items-center space-x-1 text-muted-foreground"
+                                >
+                                  {pod.source.metadata.favicon && (
+                                    <Image
+                                      src={pod.source.metadata.favicon}
+                                      alt=""
+                                      width={16}
+                                      height={16}
+                                      className="rounded"
+                                    />
+                                  )}
+                                  <span className="truncate">
+                                    {pod.source.metadata.siteName ||
+                                      pod.source.metadata.url}
+                                  </span>
+                                </a>
+                              )}
+                              {pod.source.metadata.publishDate && (
+                                <div className="text-sm text-muted-foreground flex items-center space-x-2">
+                                  <Icons.calendar className="h-4 w-4" />
+                                  <span>
+                                    {new Date(
+                                      pod.source.metadata.publishDate
+                                    ).toLocaleDateString("zh-CN", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
-                        <div className="space-y-2 flex-1 min-w-0">
-                          {pod.source.metadata.url && (
-                            <a
-                              href={pod.source.metadata.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-muted-foreground hover:text-foreground flex items-center space-x-2"
-                            >
-                              {pod.source.metadata.favicon && (
-                                <Image
-                                  src={pod.source.metadata.favicon}
-                                  alt=""
-                                  width={16}
-                                  height={16}
-                                  className="rounded"
-                                />
-                              )}
-                              <span className="truncate">
-                                {pod.source.metadata.siteName ||
-                                  pod.source.metadata.url}
-                              </span>
-                            </a>
-                          )}
-                          {pod.source.metadata.author && (
-                            <div className="text-sm text-muted-foreground flex items-center space-x-2">
-                              <Icons.users className="h-4 w-4" />
-                              <span>{pod.source.metadata.author}</span>
-                            </div>
-                          )}
-                          {pod.source.metadata.publishDate && (
-                            <div className="text-sm text-muted-foreground flex items-center space-x-2">
-                              <Icons.calendar className="h-4 w-4" />
-                              <span>
-                                {new Date(
-                                  pod.source.metadata.publishDate
-                                ).toLocaleDateString("zh-CN", {
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                })}
-                              </span>
-                            </div>
-                          )}
+                        <div className="border-t pt-4">
+                          <p className="whitespace-pre-wrap">
+                            {pod.source.content}
+                          </p>
                         </div>
                       </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Icons.text className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                        <p>没有原文内容</p>
+                      </div>
                     )}
-                    <div className="border-t pt-4">
-                      <p className="whitespace-pre-wrap">
-                        {pod.source.content}
-                      </p>
-                    </div>
                   </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Icons.text className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                    <p>没有原文内容</p>
-                  </div>
-                )}
+                </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>

@@ -63,17 +63,26 @@ export function CreatePodCard({ onCreated, className }: CreatePodCardProps) {
               <Icons.link className="h-4 w-4" />
               网页
             </TabsTrigger>
-            <TabsTrigger value="file" className="flex items-center gap-2">
+            <TabsTrigger
+              value="file"
+              className="flex items-center gap-2"
+              disabled
+            >
               <Icons.upload className="h-4 w-4" />
               文件
             </TabsTrigger>
-            <TabsTrigger value="text" className="flex items-center gap-2">
+            <TabsTrigger
+              value="text"
+              className="flex items-center gap-2"
+              disabled
+            >
               <Icons.text className="h-4 w-4" />
               文本
             </TabsTrigger>
             <TabsTrigger
               value="channel"
               className="group flex items-center gap-2"
+              disabled
             >
               <Icons.sparkles className="h-4 w-4 text-emerald-500" />
               <span className="text-emerald-500">主动探寻</span>

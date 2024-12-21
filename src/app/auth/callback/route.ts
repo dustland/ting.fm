@@ -1,30 +1,40 @@
-// The client you created from the Server-Side Auth instructions
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
-  // if "next" is in param, use it as the redirect URL
-  const next = searchParams.get("next") ?? "/";
-
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get("code");
+  const next = requestUrl.searchParams.get("redirect") || "/";
+  
+  // If we have a code, exchange it for a session
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      const forwardedHost = request.headers.get("x-forwarded-host"); // original origin before load balancer
-      const isLocalEnv = process.env.NODE_ENV === "development";
-      if (isLocalEnv) {
-        // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
-        return NextResponse.redirect(`${origin}${next}`);
-      } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`);
-      } else {
-        return NextResponse.redirect(`${origin}${next}`);
-      }
+    
+    try {
+      // Exchange the code for a session
+      await supabase.auth.exchangeCodeForSession(code);
+      
+      // Redirect to the original URL
+      return NextResponse.redirect(`${requestUrl.origin}${next}`);
+    } catch (error) {
+      console.error("Error in auth callback:", error);
+      return NextResponse.redirect(
+        `${requestUrl.origin}/auth/error?error=session-error&description=${encodeURIComponent('Failed to create session')}`
+      );
     }
   }
 
-  // return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/auth/auth-code-error`);
+  // If we have an error from OAuth provider
+  const error = requestUrl.searchParams.get("error");
+  const errorDescription = requestUrl.searchParams.get("error_description");
+  
+  if (error) {
+    console.error("OAuth error:", { error, errorDescription });
+    return NextResponse.redirect(
+      `${requestUrl.origin}/auth/error?error=${encodeURIComponent(error)}&description=${encodeURIComponent(errorDescription || '')}`
+    );
+  }
+
+  // If we have no code and no error, redirect to login
+  return NextResponse.redirect(`${requestUrl.origin}/auth/login`);
 }

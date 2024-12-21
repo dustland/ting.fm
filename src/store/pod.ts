@@ -6,6 +6,7 @@ export interface Dialogue {
   id: string;
   host: string;
   content: string;
+  audioUrl?: string;
 }
 
 export interface PodSource {

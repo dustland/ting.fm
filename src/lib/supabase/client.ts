@@ -8,13 +8,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error("Missing Supabase environment variables");
 }
 
-export const createClient = () =>
-  createSupabaseClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-    },
-  });
+// Create a single instance of the Supabase client
+const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+});
+
+// Export the singleton instance
+export const createClient = () => supabase;
 
 export interface Attachment {
   url: string;
@@ -42,7 +45,7 @@ export async function uploadFile(
 
   const ext = file.name.split(".").pop()?.toLowerCase();
   // Validate file extension
-  const allowedExtensions = ["jpg", "jpeg", "png", "gif", "pdf", "doc", "docx"];
+  const allowedExtensions = ["jpg", "jpeg", "png", "gif", "pdf", "doc", "docx", "mp3", "wav", "m4a", "ogg"];
   if (!ext || !allowedExtensions.includes(ext)) {
     throw new Error(
       `Invalid file type. Allowed types: ${allowedExtensions.join(", ")}`
@@ -78,6 +81,10 @@ export async function uploadFile(
       error instanceof Error ? error.message : "Failed to upload file"
     );
   }
+}
+
+export function bufferToFile(buffer: Buffer, filename: string, mimetype: string): File {
+  return new File([buffer], filename, { type: mimetype });
 }
 
 export async function deleteFile(path: string, bucket = "attachments") {

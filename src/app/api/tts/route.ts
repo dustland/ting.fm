@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { bufferToFile, uploadFile } from "@/lib/supabase/client";
+import { nanoid } from "nanoid";
 
 export async function POST(request: Request) {
   try {
@@ -30,13 +32,15 @@ export async function POST(request: Request) {
     });
 
     const buffer = Buffer.from(await mp3.arrayBuffer());
+    const filename = `${nanoid()}.mp3`;
+    const file = bufferToFile(buffer, filename, "audio/mpeg");
+    
+    const attachment = await uploadFile(file, "audio");
 
-    return new NextResponse(buffer, {
-      status: 200,
-      headers: {
-        "Content-Type": "audio/mpeg",
-        "Content-Length": buffer.length.toString(),
-      },
+    return NextResponse.json({
+      url: attachment.url,
+      contentType: attachment.contentType,
+      name: attachment.name,
     });
   } catch (error) {
     console.error("Error in TTS API:", error);

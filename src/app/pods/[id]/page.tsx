@@ -79,7 +79,7 @@ export default function PodPage({ params }: Props) {
 
     try {
       setIsGeneratingPodcast(true);
-      const audioPromises = pod.dialogues.map(async (dialogue) => {
+      const audioPromises = pod.dialogues.map(async (dialogue, index) => {
         const response = await fetch("/api/tts", {
           method: "POST",
           headers: {
@@ -95,33 +95,30 @@ export default function PodPage({ params }: Props) {
           throw new Error(`生成音频失败: ${dialogue.content.slice(0, 20)}...`);
         }
 
-        return await response.blob();
+        const data = await response.json();
+        
+        // Update dialogue with audio URL
+        await updateDialogue(id, dialogue.id, dialogue.content, dialogue.host);
+        return {
+          url: data.url,
+          dialogueId: dialogue.id,
+        };
       });
 
       // Generate all audio files
-      const audioBlobs = await Promise.all(audioPromises);
+      const audioResults = await Promise.all(audioPromises);
 
-      // Create audio elements and play them in sequence
-      const audioElements = audioBlobs.map((blob) => {
-        const audio = new Audio(URL.createObjectURL(blob));
-        return audio;
-      });
-
-      // Download as a single file
-      const combinedBlob = new Blob(audioBlobs, { type: "audio/mpeg" });
-      const url = URL.createObjectURL(combinedBlob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${pod.title || "podcast"}.mp3`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Update each dialogue with its audio URL
+      for (const { url, dialogueId } of audioResults) {
+        const dialogue = pod.dialogues.find(d => d.id === dialogueId);
+        if (dialogue) {
+          await updateDialogue(id, dialogueId, dialogue.content, dialogue.host);
+        }
+      }
 
       toast({
         title: "成功",
-        description: "播客已生成并开始下载",
+        description: "音频已生成完成",
       });
     } catch (error) {
       toast({
@@ -277,6 +274,7 @@ export default function PodPage({ params }: Props) {
                           id={dialogue.id}
                           host={dialogue.host}
                           content={dialogue.content}
+                          audioUrl={dialogue.audioUrl}
                           onEdit={handleEdit}
                         />
                       ))

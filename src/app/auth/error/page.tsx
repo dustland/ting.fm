@@ -17,10 +17,12 @@ import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
 const errorMessages: { [key: string]: string } = {
-  default: 'An unexpected error occurred during authentication.',
-  'session-missing': 'Your login session is missing or has expired.',
-  'invalid-code': 'The authentication code is invalid or has expired.',
-  'user-not-found': 'No user account was found with the provided credentials.',
+  default: "认证过程中发生了意外错误。",
+  "session-missing": "登录会话已失效或不存在。",
+  "no-code": "未收到认证码，请重新登录。",
+  unexpected: "发生了意外错误，请重试。",
+  invalid_grant: "认证码已过期或无效，请重新登录。",
+  invalid_request: "无效的认证请求，请重新登录。",
 };
 
 function AuthErrorContent() {
@@ -30,7 +32,7 @@ function AuthErrorContent() {
   const errorMessage = errorMessages[errorType] || errorMessages.default;
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center h-[calc(100vh-var(--navbar-height))]">
       <Card className="w-[640px]">
         <CardHeader>
           <div className="flex items-center space-x-2">
@@ -51,10 +53,7 @@ function AuthErrorContent() {
           >
             重新登录
           </Link>
-          <Link
-            href="/"
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
+          <Link href="/" className={cn(buttonVariants({ variant: "outline" }))}>
             返回首页
           </Link>
         </CardFooter>

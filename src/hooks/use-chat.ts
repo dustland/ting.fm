@@ -25,30 +25,26 @@ export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
   const processDialogues = (content: string): Dialogue[] => {
     console.log("[Chat] Processing dialogues from content:", content);
     
-    const blocks = content.split(/\[\[(host[12])\]\]/);
-    console.log("[Chat] Split blocks:", blocks);
-    
     const dialogues: Dialogue[] = [];
-    let index = 0;
+    const regex = /<(host[12])>(.*?)(?=<host[12]>|$)/gs;
+    let match;
 
-    for (let i = 1; i < blocks.length; i += 2) {
-      const hostNum = blocks[i];
-      const content = blocks[i + 1];
-
-      if (hostNum && content) {
-        const cleanContent = content.replace(/\[\[|\]\]/g, "").trim();
-        const dialogue = {
-          id: `${Date.now()}-${index}`,
-          host: hostNum,
-          content: cleanContent,
-        };
-        console.log("[Chat] Created dialogue:", dialogue);
-        dialogues.push(dialogue);
-        index++;
+    while ((match = regex.exec(content)) !== null) {
+      const [, hostId, rawContent] = match;
+      if (hostId && rawContent) {
+        const cleanContent = rawContent.trim();
+        if (cleanContent) {
+          const dialogue = {
+            id: `${Date.now()}-${dialogues.length}`,
+            host: hostId,
+            content: cleanContent,
+          };
+          console.log("[Chat] Created dialogue:", dialogue);
+          dialogues.push(dialogue);
+        }
       }
     }
 
-    console.log("[Chat] Final dialogues:", dialogues);
     return dialogues;
   };
 

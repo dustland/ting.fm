@@ -32,6 +32,7 @@ export function UrlInput({ onSubmit, isLoading }: UrlInputProps) {
       // Call API to crawl URL
       const response = await fetch("/api/scrape", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },

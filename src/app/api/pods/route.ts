@@ -42,21 +42,22 @@ export async function POST(req: Request) {
   try {
     const supabase = await createClient();
     const user = await getUser();
-    
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const pod = await req.json();
 
-    // Convert camelCase to snake_case
+    // Convert camelCase to snake_case and add timestamps
+    const now = new Date().toISOString();
     const dbPod = {
       title: pod.title,
       url: pod.url,
       source: pod.source,
       dialogues: pod.dialogues || [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: now,
+      updated_at: now,
       status: pod.status,
       user_id: user.id,
     };

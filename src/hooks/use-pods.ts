@@ -4,7 +4,9 @@ import { Dialogue, PodSource, usePodStore, type Pod } from "@/store/pod";
 import useSWR, { mutate } from "swr";
 
 const fetcher = async (url: string) => {
-  const res = await fetch(url);
+  const res = await fetch(url, {
+    credentials: 'include',
+  });
   if (!res.ok) throw new Error('Failed to fetch pods');
   return res.json();
 };
@@ -24,23 +26,26 @@ export function usePods(podId?: string) {
         source,
         dialogues: [],
         status: "draft",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
       try {
-        const response = await fetch('/api/pods', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const response = await fetch("/api/pods", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newPod),
         });
 
-        if (!response.ok) throw new Error('Failed to create pod');
-        
+        if (!response.ok) throw new Error("Failed to create pod");
+
         const savedPod = await response.json();
         addPod(savedPod);
-        mutate('/api/pods');
+        mutate("/api/pods");
         return savedPod.id;
       } catch (error) {
-        console.error('[CREATE_POD_ERROR]', error);
+        console.error("[CREATE_POD_ERROR]", error);
         throw error;
       }
     },
@@ -50,10 +55,11 @@ export function usePods(podId?: string) {
   const saveSource = useCallback(
     async (id: string, source: PodSource) => {
       try {
-        const response = await fetch('/api/pods', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, source, status: 'draft' }),
+        const response = await fetch("/api/pods", {
+          method: "PUT",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, source, status: "draft" }),
         });
 
         if (!response.ok) throw new Error('Failed to update pod source');
@@ -77,6 +83,7 @@ export function usePods(podId?: string) {
       try {
         const response = await fetch('/api/pods', {
           method: 'PUT',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id, status: 'published' }),
         });

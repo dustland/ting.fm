@@ -59,6 +59,7 @@ export function DialogueLine({
       setTtsState({ isLoading: true, isPlaying: false });
       const response = await fetch("/api/tts", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },

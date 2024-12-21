@@ -9,6 +9,7 @@ import { Icons } from "@/components/icons";
 import { useToast } from "@/hooks/use-toast";
 import { usePodChat } from "@/hooks/use-chat";
 import { usePods } from "@/hooks/use-pods";
+import { usePodStore } from "@/store/pod"; // Import the usePodStore hook
 import { useSettingStore } from "@/store/setting";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,7 +27,8 @@ export default function PodPage({ params }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingPodcast, setIsGeneratingPodcast] = useState(false);
   const { podcastSettings } = useSettingStore();
-  const { pod, updateDialogue } = usePods(id);
+  const { pod, pods } = usePods(id); // Update the usePods hook usage
+  const { updateDialogue } = usePodStore(); // Get the updateDialogue function from the pod store
   const scrollRef = useRef<HTMLDivElement>(null);
   const { append } = usePodChat({
     podId: id,
@@ -93,6 +95,7 @@ export default function PodPage({ params }: Props) {
       const audioPromises = pod.dialogues.map(async (dialogue, index) => {
         const response = await fetch("/api/tts", {
           method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },

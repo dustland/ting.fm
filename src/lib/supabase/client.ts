@@ -1,23 +1,5 @@
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 import { nanoid } from "nanoid";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Missing Supabase environment variables");
-}
-
-// Create a single instance of the Supabase client
-const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-});
-
-// Export the singleton instance
-export const createClient = () => supabase;
 
 export interface Attachment {
   url: string;
@@ -25,12 +7,40 @@ export interface Attachment {
   name: string;
 }
 
+// Create a single supabase client instance
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    cookies: {
+      getAll() {
+        return document.cookie.split("; ").map((cookie) => {
+          const [name, value] = cookie.split("=");
+          return { name, value };
+        });
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          document.cookie = `${name}=${value}; path=${
+            options?.path || "/"
+          }; secure; samesite=lax${
+            process.env.NODE_ENV === "production" ? "; domain=.ting.fm" : ""
+          }`;
+        });
+      },
+    },
+  }
+);
+
+// Export a function that returns the singleton instance
+export function createClient() {
+  return supabase;
+}
+
 export async function uploadFile(
   file: File,
   bucket = "attachments"
 ): Promise<Attachment> {
-  const supabase = createClient();
-
   // Validate file size (10MB limit)
   const MAX_SIZE = 10 * 1024 * 1024; // 10MB
   if (file.size > MAX_SIZE) {
@@ -45,7 +55,7 @@ export async function uploadFile(
 
   const ext = file.name.split(".").pop()?.toLowerCase();
   // Validate file extension
-  const allowedExtensions = ["jpg", "jpeg", "png", "gif", "pdf", "doc", "docx", "mp3", "wav", "m4a", "ogg"];
+  const allowedExtensions = ["jpg", "jpeg", "png", "gif", "pdf", "doc", "docx"];
   if (!ext || !allowedExtensions.includes(ext)) {
     throw new Error(
       `Invalid file type. Allowed types: ${allowedExtensions.join(", ")}`
@@ -83,12 +93,7 @@ export async function uploadFile(
   }
 }
 
-export function bufferToFile(buffer: Buffer, filename: string, mimetype: string): File {
-  return new File([buffer], filename, { type: mimetype });
-}
-
 export async function deleteFile(path: string, bucket = "attachments") {
-  const supabase = createClient();
   const { error } = await supabase.storage.from(bucket).remove([path]);
 
   if (error) {

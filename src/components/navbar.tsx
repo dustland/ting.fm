@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { AuthButton } from "@/components/auth-button";
 
 const navItems = [
   {
@@ -104,6 +105,7 @@ export function Navbar() {
               <span className="sr-only">设置</span>
             </Link>
           </Button>
+          <AuthButton />
         </div>
       </div>
     </header>

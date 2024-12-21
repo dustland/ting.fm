@@ -1,22 +1,26 @@
 import { NextResponse } from "next/server";
-import { OpenAI } from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: "https://oai.helicone.ai/v1",
-  defaultHeaders: {
-    "Helicone-Auth": `Bearer ${process.env.HELICONE_API_KEY}`,
-    "Helicone-User-Id": "tingfm@dustland.ai",
-    "Helicone-Property-App": "tingfm",
-  },
-});
+import OpenAI from "openai";
 
 export async function POST(request: Request) {
   try {
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: "OpenAI API key not configured" },
+        { status: 500 }
+      );
+    }
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
     const { text, voice } = await request.json();
 
     if (!text) {
-      return NextResponse.json({ error: "Text is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Text is required" },
+        { status: 400 }
+      );
     }
 
     const mp3 = await openai.audio.speech.create({
@@ -25,10 +29,8 @@ export async function POST(request: Request) {
       input: text,
     });
 
-    // Convert the raw response to an ArrayBuffer
     const buffer = Buffer.from(await mp3.arrayBuffer());
 
-    // Return the audio file with appropriate headers
     return new NextResponse(buffer, {
       status: 200,
       headers: {

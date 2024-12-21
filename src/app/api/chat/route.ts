@@ -1,24 +1,19 @@
 import { streamText } from "ai";
-import { openai, createOpenAI } from "@ai-sdk/openai";
+import { openai } from "@ai-sdk/openai";
 import { PodcastSettings } from "@/store/setting";
-
-// Create an OpenAI API client (configured with OPENAI_API_KEY env var)
-// const openai = createOpenAI({
-//   baseURL: "https://oai.helicone.ai/v1",
-//   apiKey: process.env.OPENAI_API_KEY,
-//   headers: {
-//     "Helicone-Auth": `Bearer ${process.env.HELICONE_API_KEY}`,
-//     "Helicone-User-Id": "tingfm@dustland.ai", // TODO: change this to the user's ID
-//     "Helicone-Property-App": "tingfm",
-//     "Helicone-Stream-Usage": "true",
-//   },
-// });
 
 // IMPORTANT! Set the runtime to edge
 export const runtime = "edge";
 
 export async function POST(req: Request) {
   try {
+    if (!process.env.OPENAI_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: "OpenAI API key not configured" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     // Extract the `messages` from the body of the request
     const { messages, format = "text", podcastOptions } = await req.json();
 

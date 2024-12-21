@@ -1,17 +1,19 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Button } from "./ui/button";
-import { Icons } from "./icons";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 interface DialogueLineProps {
   id: string;
   host: string;
   content: string;
   className?: string;
+  onEdit?: (id: string, content: string) => void;
 }
 
 export function DialogueLine({
@@ -19,13 +21,26 @@ export function DialogueLine({
   host,
   content,
   className,
+  onEdit,
 }: DialogueLineProps) {
   const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState(content);
   const [ttsState, setTtsState] = useState<{
     isLoading: boolean;
     isPlaying: boolean;
   }>({ isLoading: false, isPlaying: false });
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  const handleEdit = () => {
+    if (!onEdit) return;
+    onEdit(id, editedContent);
+    setIsEditing(false);
+    toast({
+      title: "对话已更新",
+      description: "内容已成功保存",
+    });
+  };
 
   const generateTts = async (text: string) => {
     try {
@@ -89,38 +104,46 @@ export function DialogueLine({
   const isHost1 = host === "host1";
 
   return (
-    <div
-      className={cn(
-        "flex gap-3",
-        isHost1 ? "flex-row" : "flex-row-reverse",
-        className
-      )}
-    >
+    <div className={cn("flex gap-3", className)}>
       <Avatar>
         <AvatarImage
           src={isHost1 ? "/avatars/host1.png" : "/avatars/host2.png"}
         />
         <AvatarFallback>{isHost1 ? "H1" : "H2"}</AvatarFallback>
       </Avatar>
-      <div
-        className={cn(
-          "flex flex-col max-w-[80%]",
-          isHost1 ? "items-start" : "items-end"
-        )}
-      >
-        <div className="flex items-center gap-2">
-          <div
-            className={cn(
-              "rounded-lg px-4 py-2",
-              isHost1 ? "bg-primary text-primary-foreground" : "bg-muted"
-            )}
-          >
-            {content}
-          </div>
+      <div className="flex flex-col max-w-[90%] w-full space-y-1">
+        <div
+          className={cn(
+            "rounded-lg px-4 py-2 text-sm",
+            isHost1 ? "bg-primary text-primary-foreground" : "bg-muted"
+          )}
+        >
+          {isEditing ? (
+            <Textarea
+              className="w-full bg-transparent resize-none m-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-0"
+              value={editedContent}
+              onChange={(e) => setEditedContent(e.target.value)}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleEdit();
+                }
+                if (e.key === "Escape") {
+                  setIsEditing(false);
+                  setEditedContent(content);
+                }
+              }}
+            />
+          ) : (
+            content
+          )}
+        </div>
+        <div className="flex items-center justify-between w-full gap-1">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 shrink-0"
+            className="h-8 w-8"
             onClick={handlePlayTts}
             disabled={ttsState.isLoading}
           >
@@ -132,6 +155,42 @@ export function DialogueLine({
               <Icons.play className="h-4 w-4" />
             )}
           </Button>
+          {onEdit && (
+            <div className="flex items-center gap-1">
+              {isEditing ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={handleEdit}
+                  >
+                    <Icons.check className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setEditedContent(content);
+                    }}
+                  >
+                    <Icons.close className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <Icons.edit className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

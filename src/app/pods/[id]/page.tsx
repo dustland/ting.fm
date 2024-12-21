@@ -95,10 +95,32 @@ export default function PodPage({ params }: Props) {
     }
   };
 
+  const handleEdit = async (id: string, content: string) => {
+    try {
+      const response = await fetch(`/api/pods/${params.id}/dialogues/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content }),
+      });
+
+      if (!response.ok) {
+        throw new Error("更新对话失败");
+      }
+    } catch (error) {
+      toast({
+        title: "错误",
+        description: error instanceof Error ? error.message : "更新对话失败",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <div className="container py-6">
-      <div className="max-w-3xl mx-auto space-y-6">
-        <div className="px-2">
+    <div className="h-[calc(100vh-var(--navbar-height))] container flex flex-col py-2">
+      <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col min-h-0">
+        <div className="flex-none">
           <h2 className="text-2xl font-bold tracking-tight">
             {pod?.title || pod?.source?.metadata?.title || "未命名播客"}
           </h2>
@@ -141,17 +163,15 @@ export default function PodPage({ params }: Props) {
                   {isLoading ? "生成中..." : "生成对话"}
                 </Button>
               </div>
-              {pod.source.metadata?.description && (
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {pod.source.metadata.description}
-                </p>
-              )}
             </div>
           )}
         </div>
 
-        <Tabs defaultValue="dialogues" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
+        <Tabs
+          defaultValue="dialogues"
+          className="flex-1 flex flex-col min-h-0 mt-6"
+        >
+          <TabsList className="flex-none grid w-full grid-cols-2">
             <TabsTrigger value="dialogues" className="flex items-center gap-2">
               <Icons.podcast className="h-4 w-4" />
               播客对话
@@ -162,10 +182,10 @@ export default function PodPage({ params }: Props) {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="dialogues" className="mt-0">
-            <Card>
-              <CardContent className="p-0">
-                <ScrollArea className="h-[calc(100vh-20rem)]">
+          <TabsContent value="dialogues" className="flex-1 min-h-0">
+            <Card className="h-full">
+              <CardContent className="p-0 h-full">
+                <ScrollArea className="h-full">
                   <div className="p-4 space-y-4">
                     {pod?.dialogues?.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
@@ -180,6 +200,7 @@ export default function PodPage({ params }: Props) {
                           id={dialogue.id}
                           host={dialogue.host}
                           content={dialogue.content}
+                          onEdit={handleEdit}
                         />
                       ))
                     )}
@@ -189,10 +210,10 @@ export default function PodPage({ params }: Props) {
             </Card>
           </TabsContent>
 
-          <TabsContent value="source" className="mt-0">
-            <Card>
-              <CardContent className="p-0">
-                <ScrollArea className="h-[calc(100vh-20rem)]">
+          <TabsContent value="source" className="flex-1 min-h-0 mt-4">
+            <Card className="h-full">
+              <CardContent className="p-0 h-full">
+                <ScrollArea className="h-full">
                   <div className="p-4">
                     {pod?.source ? (
                       <div className="prose prose-sm max-w-none space-y-4">

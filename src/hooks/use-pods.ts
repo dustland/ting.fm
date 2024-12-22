@@ -22,7 +22,18 @@ export function usePod(podId: string) {
     endOperation,
     getOperationStatus,
   } = usePodStore();
-  const pod = pods[podId];
+  
+  const { data: remotePod, error } = useSWR(
+    `${API_ENDPOINT}/${podId}`,
+    fetcher,
+    {
+      onSuccess: (data) => {
+        updatePod(podId, data);
+      },
+    }
+  );
+
+  const pod = pods[podId] || remotePod;
   const status = getOperationStatus(podId);
 
   const handleUpdatePod = useCallback(

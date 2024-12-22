@@ -1,5 +1,46 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient, getUser } from "@/lib/supabase/server";
+
+const podSchema = z.object({
+  title: z.string(),
+  url: z.string().optional(),
+  source: z
+    .object({
+      type: z.enum(["url", "file", "text", "paper"]),
+      content: z.string(),
+      metadata: z
+        .object({
+          favicon: z.string().optional(),
+          title: z.string(),
+          image: z.string().optional(),
+          authors: z.array(z.string()).optional(),
+          summary: z.string().optional(),
+          link: z.string().optional(),
+          categories: z.array(z.string()).optional(),
+          wordCount: z.number().optional(),
+          siteName: z.string().optional(),
+          readingTime: z.number().optional(),
+          createdAt: z.string().optional(),
+          updatedAt: z.string().optional(),
+          pdfLink: z.string().optional(),
+          doi: z.string().optional(),
+          journal: z.string().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+  dialogues: z
+    .array(
+      z.object({
+        role: z.string(),
+        content: z.string(),
+        createdAt: z.string(),
+      })
+    )
+    .optional(),
+  status: z.enum(["draft", "ready", "published"]).optional(),
+});
 
 // GET /api/pods/[id]
 export async function GET(
@@ -9,7 +50,7 @@ export async function GET(
   try {
     const supabase = await createClient();
     const user = await getUser();
-    
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -41,35 +82,10 @@ export async function GET(
     return NextResponse.json(formattedPod);
   } catch (error) {
     console.error("[POD_GET]", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-  }
-}
-
-// DELETE /api/pods/[id]
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const supabase = await createClient();
-    const user = await getUser();
-    
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { error } = await supabase
-      .from("pods")
-      .delete()
-      .eq("id", params.id)
-      .eq("user_id", user.id);
-
-    if (error) throw error;
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("[POD_DELETE]", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -81,16 +97,16 @@ export async function PATCH(
   try {
     const supabase = await createClient();
     const user = await getUser();
-    
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const updates = await req.json();
+    const body = await req.json();
+    const validatedData = podSchema.parse(body);
 
     const { data: pod, error } = await supabase
       .from("pods")
-      .update(updates)
+      .update(validatedData)
       .eq("id", params.id)
       .eq("user_id", user.id)
       .select()
@@ -116,6 +132,46 @@ export async function PATCH(
     return NextResponse.json(formattedPod);
   } catch (error) {
     console.error("[POD_UPDATE]", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Invalid request data", details: error.errors },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/pods/[id]
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const supabase = await createClient();
+    const user = await getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { error } = await supabase
+      .from("pods")
+      .delete()
+      .eq("id", params.id)
+      .eq("user_id", user.id);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("[POD_DELETE]", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

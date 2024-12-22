@@ -22,14 +22,23 @@ export interface PodSource {
   metadata?: {
     title: string;
     description?: string;
-    author?: string;
-    publishDate?: string;
+    wordCount?: number;
+    image?: string;
+
     url?: string;
     siteName?: string;
     favicon?: string;
-    image?: string;
     readingTime?: number;
-    wordCount?: number;
+
+    authors?: string[];
+    createdAt?: string;
+    updatedAt?: string;
+    link?: string;
+    pdfLink?: string;
+    doi?: string;
+    journal?: string;
+    categories?: string[];
+    summary?: string;
   };
 }
 

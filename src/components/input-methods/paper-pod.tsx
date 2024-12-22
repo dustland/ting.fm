@@ -106,10 +106,13 @@ export function PaperPod({ onSubmit, isLoading }: PaperPodProps) {
       }),
       metadata: {
         title: selectedPaper.title,
-        description: selectedPaper.summary,
-        author: selectedPaper.authors.join(", "),
-        publishDate: selectedPaper.published,
-        url: selectedPaper.link,
+        authors: selectedPaper.authors,
+        summary: selectedPaper.summary,
+        link: selectedPaper.link,
+        pdfLink: selectedPaper.pdfLink,
+        createdAt: selectedPaper.published,
+        updatedAt: selectedPaper.updated,
+        categories: selectedPaper.categories,
       },
     });
   };

@@ -41,6 +41,15 @@ import {
   LogOut,
   GraduationCap,
   Search,
+  ExternalLink,
+  Book,
+  User,
+  File,
+  ScrollText,
+  Tag,
+  Paperclip,
+  Info,
+  Monitor,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -88,7 +97,11 @@ export const Icons = {
   moon: Moon,
   laptop: Laptop,
   logout: LogOut,
-  google: (props: any) => (
+  graduationCap: GraduationCap,
+  fileText: FileText,
+  radio: Radio,
+  search: Search,
+  google: ({ ...props }: any) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       height="24"
@@ -115,8 +128,13 @@ export const Icons = {
       <path d="M1 1h22v22H1z" fill="none" />
     </svg>
   ),
-  graduationCap: GraduationCap,
-  fileText: FileText,
-  radio: Radio,
-  search: Search,
+  user: User,
+  file: File,
+  externalLink: ExternalLink,
+  documentText: ScrollText,
+  paperclip: Paperclip,
+  tag: Tag,
+  book: Book,
+  info: Info,
+  display: Monitor,
 } as const;

@@ -8,13 +8,14 @@ import { DialogueLine } from "@/components/dialogue-line";
 import { Icons } from "@/components/icons";
 import { useToast } from "@/hooks/use-toast";
 import { usePodChat } from "@/hooks/use-chat";
-import { usePods } from "@/hooks/use-pods";
-import { usePodStore } from "@/store/pod"; // Import the usePodStore hook
+import { usePod } from "@/hooks/use-pods";
+import { usePodStore } from "@/store/pod";
 import { useSettingStore } from "@/store/setting";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
+import { PaperInfo } from "@/components/paper-info";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -24,11 +25,10 @@ export default function PodPage({ params }: Props) {
   const { id } = use(params);
   const router = useRouter();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingPodcast, setIsGeneratingPodcast] = useState(false);
   const { podcastSettings } = useSettingStore();
-  const { pod, pods } = usePods(id); // Update the usePods hook usage
-  const { updateDialogue } = usePodStore(); // Get the updateDialogue function from the pod store
+  const { pod, status, updatePod } = usePod(id);
+  const { updateDialogue } = usePodStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   const { append } = usePodChat({
     podId: id,
@@ -44,27 +44,29 @@ export default function PodPage({ params }: Props) {
   });
 
   useEffect(() => {
-    if (!pod) {
+    if (!pod && !status.isLoading) {
+      toast({
+        title: "播客不存在",
+        description: "正在返回播客列表",
+        variant: "destructive",
+      });
       router.push("/pods");
     }
-  }, [pod, router]);
+  }, [pod, router, status.isLoading, toast]);
 
-  // Auto scroll to bottom when dialogues update
-  useEffect(() => {
-    if (scrollRef.current && pod?.dialogues?.length) {
-      scrollRef.current.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: "smooth",
-      });
-    }
-  }, [pod?.dialogues]);
+  if (!pod) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+        <Icons.spinner className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   const handleGenerateDialogues = async () => {
     if (!pod?.source) return;
 
     try {
-      setIsLoading(true);
-      await append({
+      const response = await append({
         role: "user",
         content: pod.source.content,
       });
@@ -75,8 +77,6 @@ export default function PodPage({ params }: Props) {
         description: "请稍后再试",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -190,8 +190,7 @@ export default function PodPage({ params }: Props) {
     }
   };
 
-  const isDisabled = !pod?.source || isLoading;
-  const canGeneratePodcast = pod?.dialogues && pod.dialogues.length > 0;
+  console.log(pod);
 
   return (
     <div className="h-[calc(100vh-var(--navbar-height))] container flex flex-col py-2">
@@ -218,7 +217,7 @@ export default function PodPage({ params }: Props) {
                       variant="secondary"
                       className="flex items-center space-x-2"
                     >
-                      <Icons.text className="h-4 w-4" />
+                      <Icons.documentText className="h-4 w-4" />
                       <span>{pod.source.metadata.wordCount} 字</span>
                     </Badge>
                   )}
@@ -233,22 +232,34 @@ export default function PodPage({ params }: Props) {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button
-                    onClick={handleGenerateDialogues}
-                    disabled={isDisabled}
-                    className="flex items-center gap-2"
-                  >
-                    <Icons.wand className="h-4 w-4" />
-                    {isLoading ? "生成中..." : "生成对话"}
-                  </Button>
-                  <Button
-                    onClick={handleGeneratePodcast}
-                    disabled={!canGeneratePodcast || isGeneratingPodcast}
-                    className="flex items-center gap-2"
-                  >
-                    <Icons.podcast className="h-4 w-4" />
-                    {isGeneratingPodcast ? "生成中..." : "生成播客"}
-                  </Button>
+                  {pod.dialogues?.length > 0 ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={handleGenerateDialogues}
+                        className="flex items-center gap-2"
+                      >
+                        <Icons.wand className="h-4 w-4" />
+                        重新生成剧本
+                      </Button>
+                      <Button
+                        onClick={handleGeneratePodcast}
+                        disabled={isGeneratingPodcast}
+                        className="flex items-center gap-2"
+                      >
+                        <Icons.podcast className="h-4 w-4" />
+                        {isGeneratingPodcast ? "生成中..." : "生成播客"}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      onClick={handleGenerateDialogues}
+                      className="flex items-center gap-2"
+                    >
+                      <Icons.wand className="h-4 w-4" />
+                      生成剧本
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -256,17 +267,17 @@ export default function PodPage({ params }: Props) {
         </div>
 
         <Tabs
-          defaultValue="dialogues"
+          defaultValue="source"
           className="flex-1 flex flex-col min-h-0 mt-6"
         >
           <TabsList className="flex-none grid w-full grid-cols-2">
-            <TabsTrigger value="dialogues" className="flex items-center gap-2">
-              <Icons.podcast className="h-4 w-4" />
-              播客对话
-            </TabsTrigger>
             <TabsTrigger value="source" className="flex items-center gap-2">
               <Icons.text className="h-4 w-4" />
               原文内容
+            </TabsTrigger>
+            <TabsTrigger value="dialogues" className="flex items-center gap-2">
+              <Icons.podcast className="h-4 w-4" />
+              播客对话
             </TabsTrigger>
           </TabsList>
 
@@ -303,75 +314,133 @@ export default function PodPage({ params }: Props) {
             <Card className="h-full">
               <CardContent className="p-0 h-full">
                 <ScrollArea className="h-full">
-                  <div className="p-4">
-                    {pod?.source ? (
-                      <div className="prose prose-sm max-w-none space-y-4">
-                        {pod.source.metadata && (
-                          <div className="flex items-start space-x-4 not-prose">
-                            {pod.source.metadata.image && (
-                              <div className="relative w-24 h-24 rounded-lg overflow-hidden shrink-0">
-                                <Image
-                                  src={pod.source.metadata.image}
-                                  alt={pod.source.metadata.title}
-                                  fill
-                                  sizes="24"
-                                  className="object-cover"
-                                />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0 space-y-1">
-                              {pod.source.metadata.url && (
-                                <a
-                                  href={pod.source.metadata.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm font-medium hover:underline flex items-center space-x-1 text-muted-foreground"
-                                >
-                                  {pod.source.metadata.favicon && (
-                                    <Image
-                                      src={pod.source.metadata.favicon}
-                                      alt=""
-                                      width={16}
-                                      height={16}
-                                      className="rounded"
-                                    />
-                                  )}
-                                  <span className="truncate">
-                                    {pod.source.metadata.siteName ||
-                                      pod.source.metadata.url}
-                                  </span>
-                                </a>
-                              )}
-                              {pod.source.metadata.publishDate && (
-                                <div className="text-sm text-muted-foreground flex items-center space-x-2">
-                                  <Icons.calendar className="h-4 w-4" />
-                                  <span>
-                                    {new Date(
-                                      pod.source.metadata.publishDate
-                                    ).toLocaleDateString("zh-CN", {
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    })}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
+                  {pod?.source ? (
+                    <div className="p-6 space-y-6">
+                      {/* Source Type Badge */}
+                      <div className="flex items-center justify-between">
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-2"
+                        >
+                          {pod.source.type === "url" && (
+                            <Icons.link className="h-4 w-4" />
+                          )}
+                          {pod.source.type === "file" && (
+                            <Icons.upload className="h-4 w-4" />
+                          )}
+                          {pod.source.type === "text" && (
+                            <Icons.text className="h-4 w-4" />
+                          )}
+                          {pod.source.type === "paper" && (
+                            <Icons.sparkles className="h-4 w-4 text-emerald-500" />
+                          )}
+                          <span>
+                            {pod.source.type === "url" && "网页内容"}
+                            {pod.source.type === "file" && "上传文件"}
+                            {pod.source.type === "text" && "文本输入"}
+                            {pod.source.type === "paper" && "AI 助手"}
+                          </span>
+                        </Badge>
+                        {pod.source.metadata?.wordCount && (
+                          <div className="text-sm text-muted-foreground flex items-center gap-2">
+                            <Icons.documentText className="h-4 w-4" />
+                            <span>{pod.source.metadata.wordCount} 字</span>
                           </div>
                         )}
-                        <div className="border-t pt-4">
-                          <p className="whitespace-pre-wrap">
-                            {pod.source.content}
-                          </p>
+                      </div>
+
+                      {/* Metadata Section */}
+                      {pod.source.metadata && (
+                        <div className="flex items-start gap-6 p-4 bg-muted/50 rounded-lg">
+                          {/* Image */}
+                          {pod.source.metadata.image && (
+                            <div className="relative w-32 h-32 rounded-lg overflow-hidden shrink-0 bg-background">
+                              <Image
+                                src={pod.source.metadata.image}
+                                alt={pod.source.metadata.title || ""}
+                                fill
+                                sizes="128px"
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
+
+                          {/* Metadata Details */}
+                          <div className="flex-1 min-w-0 space-y-3">
+                            {/* Title */}
+                            {pod.source.metadata.title && (
+                              <h3 className="font-semibold text-lg line-clamp-2">
+                                {pod.source.metadata.title}
+                              </h3>
+                            )}
+
+                            {/* URL */}
+                            {pod.source.metadata.url && (
+                              <a
+                                href={pod.source.metadata.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm hover:underline flex items-center gap-2 text-muted-foreground"
+                              >
+                                {pod.source.metadata.favicon && (
+                                  <Image
+                                    src={pod.source.metadata.favicon}
+                                    alt=""
+                                    width={16}
+                                    height={16}
+                                    className="rounded"
+                                  />
+                                )}
+                                <span className="truncate">
+                                  {pod.source.metadata.siteName ||
+                                    pod.source.metadata.url}
+                                </span>
+                                <Icons.externalLink className="h-3 w-3 shrink-0" />
+                              </a>
+                            )}
+                          </div>
                         </div>
+                      )}
+
+                      {/* Content Section */}
+                      <div className="prose prose-sm max-w-none">
+                        {pod.source.type === "paper" && pod.source.metadata && (
+                          <div className="space-y-6">
+                            {pod.source.metadata.summary && (
+                              <div className="mt-4">
+                                <h3 className="font-medium text-sm mb-2">
+                                  摘要
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {pod.source.metadata.summary}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {pod.source.type !== "paper" && pod.source.content && (
+                          <div className="space-y-4">
+                            {pod.source.content
+                              .split("\n")
+                              .map((paragraph, index) => (
+                                <p
+                                  key={index}
+                                  className="text-sm text-muted-foreground"
+                                >
+                                  {paragraph}
+                                </p>
+                              ))}
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Icons.text className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                        <p>没有原文内容</p>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground">
+                      <Icons.file className="h-12 w-12 mb-4 opacity-50" />
+                      <p>还没有内容</p>
+                      <p className="text-sm">请先添加内容再生成对话</p>
+                    </div>
+                  )}
                 </ScrollArea>
               </CardContent>
             </Card>

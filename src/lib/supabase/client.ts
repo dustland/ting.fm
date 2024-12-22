@@ -39,10 +39,7 @@ export function createClient() {
   return supabase;
 }
 
-export async function uploadFile(
-  file: File,
-  bucket = "attachments"
-): Promise<Attachment> {
+export async function uploadFile(file: File, bucket = "audio"): Promise<Attachment> {
   // Validate file size (10MB limit)
   const MAX_SIZE = 10 * 1024 * 1024; // 10MB
   if (file.size > MAX_SIZE) {

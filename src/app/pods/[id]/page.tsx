@@ -100,7 +100,8 @@ export default function PodPage({ params }: Props) {
 
     try {
       setIsGeneratingPodcast(true);
-      const audioPromises = dialogues.map(async (dialogue, index) => {
+      // Generate individual audio files
+      const audioPromises = dialogues.map(async (dialogue) => {
         const response = await fetch("/api/tts", {
           method: "POST",
           credentials: "include",
@@ -118,29 +119,49 @@ export default function PodPage({ params }: Props) {
         }
 
         const data = await response.json();
-
-        // Update dialogue with audio URL
-        await updatePod({
-          ...pod,
-          dialogues: pod.dialogues.map((d) =>
-            d.id === dialogue.id ? { ...d, audioUrl: data.url } : d
-          ),
-        });
         return {
           url: data.url,
           dialogueId: dialogue.id,
         };
       });
 
-      // Generate all audio files
+      // Generate all audio files in parallel
       const audioResults = await Promise.all(audioPromises);
 
-      // Update each dialogue with its audio URL
-      for (const { url, dialogueId } of audioResults) {
-        const dialogue = dialogues.find((d) => d.id === dialogueId);
-        if (dialogue) {
-          await updateDialogue(dialogue);
-        }
+      // Update all dialogues with their audio URLs
+      const updatedDialogues = dialogues.map((dialogue) => {
+        const audioResult = audioResults.find((r) => r.dialogueId === dialogue.id);
+        return audioResult
+          ? { ...dialogue, audioUrl: audioResult.url }
+          : dialogue;
+      });
+
+      // Generate merged audio
+      const response = await fetch("/api/tts/merge", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          audioUrls: audioResults.map((r) => r.url),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("合并音频失败");
+      }
+
+      const { url: mergedAudioUrl } = await response.json();
+
+      // Update pod with all audio URLs in one call
+      if (pod) {
+        await updatePod({
+          ...pod,
+          audioUrl: mergedAudioUrl,
+          dialogues: updatedDialogues,
+          updatedAt: new Date().toISOString(),
+        });
       }
 
       toast({

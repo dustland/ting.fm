@@ -47,6 +47,7 @@ export interface Pod {
   title: string;
   source?: PodSource;
   dialogues: Dialogue[];
+  audioUrl?: string;
   createdAt: string;
   updatedAt?: string;
   status: "draft" | "ready" | "published";

@@ -40,6 +40,7 @@ const podSchema = z.object({
       })
     )
     .optional(),
+  audioUrl: z.string().optional(),
   status: z.enum(["draft", "ready", "published"]).optional(),
 });
 
@@ -76,6 +77,7 @@ export async function GET(
       url: pod.url,
       source: pod.source,
       dialogues: pod.dialogues || [],
+      audioUrl: pod.audio_url,
       createdAt: pod.created_at,
       updatedAt: pod.updated_at,
       status: pod.status,
@@ -127,6 +129,7 @@ export async function PATCH(
       title: pod.title,
       source: pod.source,
       dialogues: pod.dialogues || [],
+      audioUrl: pod.audio_url,
       createdAt: pod.created_at || new Date().toISOString(),
       updatedAt: pod.updated_at || new Date().toISOString(),
       status: pod.status || "draft",

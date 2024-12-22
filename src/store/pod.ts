@@ -2,6 +2,13 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { nanoid } from "nanoid";
 
+export type PodOperation = "create" | "update" | "delete" | "publish" | "updateSource";
+
+export interface PodOperationStatus {
+  operation: PodOperation | null;
+  isLoading: boolean;
+}
+
 export interface Dialogue {
   id: string;
   host: string;
@@ -10,7 +17,7 @@ export interface Dialogue {
 }
 
 export interface PodSource {
-  type: "url" | "file" | "text" | "channel";
+  type: "url" | "file" | "text" | "paper";
   content: string;
   metadata?: {
     title: string;
@@ -39,6 +46,7 @@ export interface Pod {
 
 interface PodState {
   pods: Record<string, Pod>;
+  operationStatus: Record<string, PodOperationStatus>;
   addPod: (pod: Pod) => void;
   updatePod: (id: string, updates: Partial<Pod>) => void;
   deletePod: (id: string) => void;
@@ -51,16 +59,27 @@ interface PodState {
     host: string
   ) => void;
   deleteDialogue: (id: string, dialogueId: string) => void;
+  startOperation: (podId: string, operation: PodOperation) => void;
+  endOperation: (podId: string) => void;
+  getOperationStatus: (podId: string) => PodOperationStatus;
 }
+
+const DEFAULT_STATUS: PodOperationStatus = {
+  operation: null,
+  isLoading: false,
+};
 
 export const usePodStore = create<PodState>()(
   persist(
     (set, get) => ({
       pods: {},
+      operationStatus: {},
+
       addPod: (pod) =>
         set((state) => ({
           pods: { ...state.pods, [pod.id]: pod },
         })),
+
       updatePod: (id, updates) =>
         set((state) => {
           const pod = state.pods[id];
@@ -87,12 +106,15 @@ export const usePodStore = create<PodState>()(
             },
           };
         }),
+
       deletePod: (id) =>
         set((state) => {
           const { [id]: _, ...rest } = state.pods;
           return { pods: rest };
         }),
+
       getPod: (id) => get().pods[id],
+
       updateTopics: (id, topics) =>
         set((state) => {
           const pod = state.pods[id];
@@ -108,6 +130,7 @@ export const usePodStore = create<PodState>()(
             },
           };
         }),
+
       updateDialogue: (id, dialogueId, content, host) =>
         set((state) => {
           const pod = state.pods[id];
@@ -148,6 +171,7 @@ export const usePodStore = create<PodState>()(
             },
           };
         }),
+
       deleteDialogue: (id, dialogueId) =>
         set((state) => {
           const pod = state.pods[id];
@@ -164,9 +188,29 @@ export const usePodStore = create<PodState>()(
             },
           };
         }),
+
+      startOperation: (podId, operation) =>
+        set((state) => ({
+          operationStatus: {
+            ...state.operationStatus,
+            [podId]: {
+              operation,
+              isLoading: true,
+            },
+          },
+        })),
+
+      endOperation: (podId) =>
+        set((state) => {
+          const { [podId]: _, ...rest } = state.operationStatus;
+          return { operationStatus: rest };
+        }),
+
+      getOperationStatus: (podId) => get().operationStatus[podId] || DEFAULT_STATUS,
     }),
     {
       name: "tingfm-pods-storage",
+      partialize: (state) => ({ pods: state.pods }), // Only persist pods, not operation status
     }
   )
 );

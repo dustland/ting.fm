@@ -28,7 +28,10 @@ export function CreatePodCard({ onCreated, className }: CreatePodCardProps) {
   const handleCreate = async (source: PodSource) => {
     try {
       setIsCreating(true);
-      const { id: podId } = await createPod("", source);
+      const { id: podId } = await createPod(
+        source.metadata?.title || "Untitled",
+        source
+      );
       toast({
         title: "播客创建成功",
         description: "正在跳转到播客详情页...",
@@ -77,6 +80,9 @@ export function CreatePodCard({ onCreated, className }: CreatePodCardProps) {
             </TabsTrigger>
           </TabsList>
           <div className="mt-4 space-y-4">
+            <TabsContent value="paper">
+              <PaperPod onSubmit={handleCreate} isLoading={isCreating} />
+            </TabsContent>
             <TabsContent value="url">
               <UrlInput onSubmit={handleCreate} isLoading={isCreating} />
             </TabsContent>
@@ -85,9 +91,6 @@ export function CreatePodCard({ onCreated, className }: CreatePodCardProps) {
             </TabsContent>
             <TabsContent value="text">
               <TextInput onSubmit={handleCreate} isLoading={isCreating} />
-            </TabsContent>
-            <TabsContent value="paper">
-              <PaperPod onSubmit={handleCreate} isLoading={isCreating} />
             </TabsContent>
           </div>
         </Tabs>

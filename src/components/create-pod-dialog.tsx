@@ -10,14 +10,24 @@ import {
 import { Button } from "./ui/button";
 import { Icons } from "./icons";
 import { CreatePodCard } from "./create-pod-card";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 interface CreatePodDialogProps {
   trigger?: React.ReactNode;
 }
 
 export function CreatePodDialog({ trigger }: CreatePodDialogProps) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+
+  const handleCreated = (podId: string) => {
+    setOpen(false);
+    router.push(`/pods/${podId}`);
+  };
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
           <Button>
@@ -30,7 +40,7 @@ export function CreatePodDialog({ trigger }: CreatePodDialogProps) {
         <DialogHeader>
           <DialogTitle>创建新播客</DialogTitle>
         </DialogHeader>
-        <CreatePodCard />
+        <CreatePodCard onCreated={handleCreated} />
       </DialogContent>
     </Dialog>
   );

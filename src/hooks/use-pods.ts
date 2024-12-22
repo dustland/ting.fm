@@ -1,118 +1,188 @@
 import { useCallback } from "react";
-import { nanoid } from "nanoid";
-import { Dialogue, PodSource, usePodStore, type Pod } from "@/store/pod";
 import useSWR, { mutate } from "swr";
+import { type Pod, type PodSource, usePodStore } from "@/store/pod";
+
+const API_ENDPOINT = "/api/pods";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url, {
-    credentials: 'include',
+    credentials: "include",
   });
-  if (!res.ok) throw new Error('Failed to fetch pods');
+  if (!res.ok) throw new Error("Failed to fetch pods");
   return res.json();
 };
 
-export function usePods(podId?: string) {
-  const { pods, addPod, updatePod, deletePod, getPod } = usePodStore();
-  const { data: remotePods, error, isLoading } = useSWR('/api/pods', fetcher);
+// Hook for managing a single pod
+export function usePod(podId: string) {
+  const {
+    pods,
+    updatePod,
+    deletePod: deleteLocalPod,
+    startOperation,
+    endOperation,
+    getOperationStatus,
+  } = usePodStore();
+  const pod = pods[podId];
+  const status = getOperationStatus(podId);
 
-  const createPod = useCallback(
-    async (title: string, source: PodSource) => {
-      const id = nanoid(6);
-      console.log(`[Pods] Creating new pod with id: ${id}, title: ${title}`);
-      const newPod: Pod = {
-        id,
-        url: "",
-        title,
-        source,
-        dialogues: [],
-        status: "draft",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
+  const handleUpdatePod = useCallback(
+    async (updates: Partial<Pod>) => {
       try {
-        const response = await fetch("/api/pods", {
+        startOperation(podId, "update");
+        const response = await fetch(`${API_ENDPOINT}/${podId}`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        });
+
+        if (!response.ok) throw new Error("Failed to update pod");
+
+        const updatedPod = await response.json();
+        updatePod(podId, updatedPod);
+        mutate(API_ENDPOINT);
+        return updatedPod;
+      } catch (error) {
+        console.error("[UPDATE_POD_ERROR]", error);
+        throw error;
+      } finally {
+        endOperation(podId);
+      }
+    },
+    [podId, updatePod, startOperation, endOperation]
+  );
+
+  const handleDeletePod = useCallback(
+    async () => {
+      try {
+        startOperation(podId, "delete");
+        const response = await fetch(`${API_ENDPOINT}/${podId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+
+        if (!response.ok) throw new Error("Failed to delete pod");
+
+        deleteLocalPod(podId);
+        mutate(API_ENDPOINT);
+      } catch (error) {
+        console.error("[DELETE_POD_ERROR]", error);
+        throw error;
+      } finally {
+        endOperation(podId);
+      }
+    },
+    [podId, deleteLocalPod, startOperation, endOperation]
+  );
+
+  const handleUpdateSource = useCallback(
+    async (source: PodSource) => {
+      try {
+        startOperation(podId, "updateSource");
+        const response = await fetch(`${API_ENDPOINT}/${podId}`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ source, status: "draft" }),
+        });
+
+        if (!response.ok) throw new Error("Failed to update pod source");
+
+        const updatedPod = await response.json();
+        updatePod(podId, {
+          source,
+          status: "draft",
+          updatedAt: updatedPod.updatedAt,
+        });
+        mutate(API_ENDPOINT);
+      } catch (error) {
+        console.error("[SAVE_SOURCE_ERROR]", error);
+        throw error;
+      } finally {
+        endOperation(podId);
+      }
+    },
+    [podId, updatePod, startOperation, endOperation]
+  );
+
+  const handlePublishPod = useCallback(
+    async () => {
+      try {
+        startOperation(podId, "publish");
+        const response = await fetch(`${API_ENDPOINT}/${podId}`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "published" }),
+        });
+
+        if (!response.ok) throw new Error("Failed to publish pod");
+
+        const updatedPod = await response.json();
+        updatePod(podId, {
+          status: "published",
+          updatedAt: updatedPod.updatedAt,
+        });
+        mutate(API_ENDPOINT);
+      } catch (error) {
+        console.error("[PUBLISH_POD_ERROR]", error);
+        throw error;
+      } finally {
+        endOperation(podId);
+      }
+    },
+    [podId, updatePod, startOperation, endOperation]
+  );
+
+  return {
+    pod,
+    status,
+    isLoading: status.isLoading,
+    currentOperation: status.operation,
+    updatePod: handleUpdatePod,
+    deletePod: handleDeletePod,
+    updateSource: handleUpdateSource,
+    publishPod: handlePublishPod,
+  };
+}
+
+// Hook for managing all pods
+export function usePods() {
+  const { pods, addPod, startOperation, endOperation } = usePodStore();
+  const { data: remotePods, error, isLoading } = useSWR(API_ENDPOINT, fetcher);
+
+  const handleCreatePod = useCallback(
+    async (title: string, source: PodSource) => {
+      const tempId = "temp-" + Date.now();
+      try {
+        startOperation(tempId, "create");
+        const response = await fetch(API_ENDPOINT, {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newPod),
+          body: JSON.stringify({ title, source }),
         });
 
         if (!response.ok) throw new Error("Failed to create pod");
 
-        const savedPod = await response.json();
-        addPod(savedPod);
-        mutate("/api/pods");
-        return savedPod.id;
+        const pod = await response.json();
+        addPod(pod);
+        mutate(API_ENDPOINT);
+        return pod;
       } catch (error) {
         console.error("[CREATE_POD_ERROR]", error);
         throw error;
+      } finally {
+        endOperation(tempId);
       }
     },
-    [addPod]
-  );
-
-  const saveSource = useCallback(
-    async (id: string, source: PodSource) => {
-      try {
-        const response = await fetch("/api/pods", {
-          method: "PUT",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id, source, status: "draft" }),
-        });
-
-        if (!response.ok) throw new Error('Failed to update pod source');
-
-        const updatedPod = await response.json();
-        updatePod(id, {
-          source,
-          updatedAt: updatedPod.updatedAt,
-        });
-        mutate('/api/pods');
-      } catch (error) {
-        console.error('[SAVE_SOURCE_ERROR]', error);
-        throw error;
-      }
-    },
-    [updatePod]
-  );
-
-  const publishPod = useCallback(
-    async (id: string) => {
-      try {
-        const response = await fetch('/api/pods', {
-          method: 'PUT',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, status: 'published' }),
-        });
-
-        if (!response.ok) throw new Error('Failed to publish pod');
-
-        const updatedPod = await response.json();
-        updatePod(id, {
-          status: "published",
-          updatedAt: updatedPod.updatedAt,
-        });
-        mutate('/api/pods');
-      } catch (error) {
-        console.error('[PUBLISH_POD_ERROR]', error);
-        throw error;
-      }
-    },
-    [updatePod]
+    [addPod, startOperation, endOperation]
   );
 
   return {
     pods: remotePods || pods,
-    pod: podId ? getPod(podId) : undefined,
-    createPod,
-    saveSource,
-    publishPod,
-    deletePod,
-    updatePod,
-    isLoading,
     error,
+    isLoading,
+    createPod: handleCreatePod,
   };
 }

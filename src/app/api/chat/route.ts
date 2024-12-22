@@ -1,4 +1,4 @@
-import { streamText } from "ai";
+import { CoreMessage, streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { PodcastSettings } from "@/store/setting";
 
@@ -123,16 +123,15 @@ ${finalPodcastOptions.hosts
 
 请用中文输出对话内容。`,
           },
-          ...messages,
-        ],
+        ] as CoreMessage[],
         temperature: 0.7,
       };
 
-      console.log(
-        "Generating podcast script with finalPodcastOptions:",
-        finalPodcastOptions
-      );
-      console.log("Generating podcast script with requestBody:", requestBody);
+      // console.log(
+      //   "Generating podcast script with finalPodcastOptions:",
+      //   finalPodcastOptions
+      // );
+      // console.log("Generating podcast script with requestBody:", requestBody);
 
       const result = streamText(requestBody);
 

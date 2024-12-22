@@ -93,6 +93,16 @@ export function usePod(podId: string) {
     [pod, wrappedUpdatePod]
   );
 
+  const handleUpdateDialogues = useCallback(
+    async (dialogues: Dialogue[]) => {
+      await wrappedUpdatePod({
+        ...pod,
+        dialogues,
+      });
+    },
+    [pod, wrappedUpdatePod]
+  );
+
   return {
     pod,
     isLoading: status.isLoading,
@@ -104,12 +114,13 @@ export function usePod(podId: string) {
     updateSource: wrappedUpdateSource,
     deletePod: wrappedDeletePod,
     publishPod: wrappedPublishPod,
+    updateDialogues: handleUpdateDialogues,
   };
 }
 
 // Hook for managing all pods
 export function usePods() {
-  const { pods, setPods, addPod, deletePod } = usePodStore();
+  const { pods, setPods, addPod, updatePod, deletePod } = usePodStore();
   const {
     data: remotePods,
     error,
@@ -159,7 +170,7 @@ export function usePods() {
         if (!response.ok) throw new Error("Failed to update pod");
 
         const updatedPod = await response.json();
-        addPod(updatedPod);
+        updatePod(updatedPod.id, updatedPod);
         mutate(API_ENDPOINT);
         return updatedPod;
       } catch (error) {
@@ -245,6 +256,16 @@ export function usePods() {
     [addPod]
   );
 
+  const handleUpdateDialogues = useCallback(
+    async (podId: string, dialogues: Dialogue[]) => {
+      await handleUpdatePod(podId, {
+        dialogues,
+        updatedAt: new Date().toISOString(),
+      });
+    },
+    [handleUpdatePod]
+  );
+
   return {
     pods: pods,
     error,
@@ -254,5 +275,6 @@ export function usePods() {
     updateSource: handleUpdateSource,
     deletePod: handleDeletePod,
     publishPod: handlePublishPod,
+    updateDialogues: handleUpdateDialogues,
   };
 }

@@ -12,7 +12,7 @@ interface UsePodChatOptions {
 }
 
 export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
-  const { pod, updatePod } = usePod(podId);
+  const { pod, updatePod, updateDialogues } = usePod(podId);
   const { toast } = useToast();
   const chat = useVercelChat({
     api: "/api/chat",
@@ -46,11 +46,31 @@ export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
     },
   });
 
+  const isDialoguesUpdated = (newDialogues: Dialogue[]) => {
+    // If pod or pod.dialogues is undefined, treat as update needed
+    if (!pod?.dialogues) return true;
+
+    // If lengths are different, update is needed
+    if (pod.dialogues.length !== newDialogues.length) {
+      return true;
+    }
+
+    // Compare each dialogue for changes
+    return newDialogues.some((newDialogue, index) => {
+      const existingDialogue = pod.dialogues[index];
+      return (
+        existingDialogue.id !== newDialogue.id ||
+        existingDialogue.host !== newDialogue.host ||
+        existingDialogue.content !== newDialogue.content
+      );
+    });
+  };
+
   const processDialogues = (content: string): Dialogue[] => {
     console.log("[Chat] Processing dialogues from content:", content);
 
     const dialogues: Dialogue[] = [];
-    const regex = /<([^>]+)>(.*?)(?=<[^>]+>|$)/gs;
+    const regex = /\[\[([^\]]+)\]\]:\s*(.*)/g;
     let match;
 
     while ((match = regex.exec(content)) !== null) {
@@ -58,8 +78,8 @@ export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
       if (hostName && rawContent) {
         const cleanContent = rawContent.trim();
         if (cleanContent) {
-          const dialogue = {
-            id: `${Date.now()}-${dialogues.length}`,
+          const dialogue: Dialogue = {
+            id: `${podId}-${dialogues.length}`,
             host: hostName,
             content: cleanContent,
           };
@@ -90,14 +110,10 @@ export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
           podId,
           dialogues,
         });
-        updatePod({
-          ...pod,
-          dialogues,
-          status: "ready",
-        });
+        if (isDialoguesUpdated(dialogues)) updateDialogues(dialogues);
       }
     }
-  }, [chat.messages, podId, updatePod, chat.isLoading, toast]);
+  }, [chat.messages, podId, updateDialogues, chat.isLoading, toast]);
 
   return chat;
 }

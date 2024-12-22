@@ -350,13 +350,13 @@ export default function PodPage({ params }: Props) {
                             {pod.source.type === "paper" &&
                               pod.source.metadata?.categories &&
                               pod.source.metadata.categories[0] && (
-                                <div className="flex items-center gap-1 w-full">
+                                <div className="flex items-center gap-2 w-full">
                                   <Icons.arxiv className="h-4 w-4 shrink-0" />
                                   {pod.source.metadata.categories.map(
                                     (category, index) => (
                                       <span
                                         key={index}
-                                        className="nowrap max-w-48 truncate p-1 border rounded-md bg-muted"
+                                        className="nowrap max-w-48 truncate p-1 border rounded-md bg-muted/50"
                                       >
                                         {category}
                                       </span>

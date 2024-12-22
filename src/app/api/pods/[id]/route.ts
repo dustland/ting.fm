@@ -33,9 +33,10 @@ const podSchema = z.object({
   dialogues: z
     .array(
       z.object({
-        role: z.string(),
+        id: z.string(),
+        host: z.string(),
         content: z.string(),
-        createdAt: z.string(),
+        audioUrl: z.string().optional(),
       })
     )
     .optional(),
@@ -122,14 +123,13 @@ export async function PATCH(
 
     // Convert snake_case to camelCase
     const formattedPod = {
-      id: pod.id,
+      id: resolvedParams.id,
       title: pod.title,
-      url: pod.url,
       source: pod.source,
       dialogues: pod.dialogues || [],
-      createdAt: pod.created_at,
-      updatedAt: pod.updated_at,
-      status: pod.status,
+      createdAt: pod.created_at || new Date().toISOString(),
+      updatedAt: pod.updated_at || new Date().toISOString(),
+      status: pod.status || "draft",
     };
 
     return NextResponse.json(formattedPod);

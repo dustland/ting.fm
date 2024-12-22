@@ -3,26 +3,11 @@ import { chromium } from "playwright";
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import getMetaData from "metadata-scraper";
+import { Pod, PodSource } from "@/store/pod";
+import { nanoid } from "nanoid";
 
 export interface CrawlRequest {
   url: string;
-}
-
-export interface CrawlResponse {
-  title: string;
-  metadata: {
-    title: string;
-    description: string;
-    author?: string;
-    publishDate?: string;
-    url: string;
-    siteName?: string;
-    favicon?: string;
-    image?: string;
-    readingTime?: number;
-    wordCount?: number;
-  };
-  content: string;
 }
 
 interface ExtractedContent {
@@ -167,37 +152,48 @@ export async function POST(req: NextRequest) {
     const readingTime = estimateReadingTime(wordCount);
     const title = article.title || metadata.title || "未知标题";
 
-    const response: CrawlResponse = {
+    const response: Pod = {
+      id: nanoid(),
       title,
-      metadata: {
-        title,
-        description: article.excerpt || metadata.description || "无描述",
-        author: metadata.author
-          ? Array.isArray(metadata.author)
-            ? metadata.author.join(", ")
-            : metadata.author
-          : article.byline || undefined,
-        publishDate: metadata.published
-          ? Array.isArray(metadata.published)
-            ? metadata.published[0]
-            : metadata.published
-          : undefined,
-        url,
-        siteName: (
-          article.siteName ||
-          metadata.publisher ||
-          parsedUrl.hostname
-        )?.toString(),
-        favicon: metadata.icon || `https://${parsedUrl.hostname}/favicon.ico`,
-        image: metadata.image,
-        readingTime,
-        wordCount,
+      dialogues: [],
+      source: {
+        type: "url",
+        metadata: {
+          title,
+          description: article.excerpt || metadata.description || "无描述",
+          authors: metadata.author
+            ? Array.isArray(metadata.author)
+              ? metadata.author
+              : [metadata.author]
+            : [article.byline || ""],
+          createdAt: metadata.published
+            ? Array.isArray(metadata.published)
+              ? metadata.published[0]
+              : metadata.published
+            : undefined,
+          url,
+          siteName: (
+            article.siteName ||
+            metadata.publisher ||
+            parsedUrl.hostname
+          )?.toString(),
+          favicon: metadata.icon || `https://${parsedUrl.hostname}/favicon.ico`,
+          image: metadata.image,
+          readingTime,
+          wordCount,
+        },
+        content: article.textContent
+          .replace(/\u0000/g, "") // Remove null characters
+          .split("\n")
+          .filter((line) => line.trim())
+          .join("\n"),
       },
-      content: article.textContent
-        .replace(/\u0000/g, "") // Remove null characters
-        .split("\n")
-        .filter((line) => line.trim())
-        .join("\n"),
+      createdAt: metadata.published
+        ? Array.isArray(metadata.published)
+          ? metadata.published[0]
+          : metadata.published
+        : new Date().toISOString(),
+      status: "draft",
     };
 
     return Response.json(response);

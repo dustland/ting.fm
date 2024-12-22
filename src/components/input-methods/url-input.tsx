@@ -48,7 +48,7 @@ export function UrlInput({ onSubmit, isLoading }: UrlInputProps) {
       }
 
       const data = await response.json();
-      await onSubmit(data.title, data);
+      await onSubmit(data.title, data.source);
     } catch (err) {
       if (err instanceof TypeError && err.message.includes("URL")) {
         setError("请输入有效的 URL");

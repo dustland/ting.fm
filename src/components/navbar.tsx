@@ -50,7 +50,7 @@ export function Navbar() {
             <Icons.logo className="h-5 w-5" />
             <span className="hidden font-bold sm:inline-block">Ting.fm</span>
           </Link>
-          <nav className="hidden md:flex">
+          <nav className="hidden sm:flex">
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -70,7 +70,7 @@ export function Navbar() {
         </div>
 
         {/* Mobile Navigation */}
-        <div className="flex md:hidden">
+        <div className="flex sm:hidden">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden">

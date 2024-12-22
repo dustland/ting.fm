@@ -301,7 +301,7 @@ export default function PodPage({ params }: Props) {
             </TabsTrigger>
             <TabsTrigger value="dialogues" className="flex items-center gap-2">
               <Icons.podcast className="h-4 w-4" />
-              播客对话
+              播客剧本
             </TabsTrigger>
           </TabsList>
 

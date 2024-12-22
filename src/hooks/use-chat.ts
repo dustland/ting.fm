@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useChat as useVercelChat, Message } from "ai/react";
 import { usePod } from "./use-pods";
 import { Dialogue } from "@/store/pod";
@@ -14,106 +14,131 @@ interface UsePodChatOptions {
 export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
   const { pod, updatePod, updateDialogues } = usePod(podId);
   const { toast } = useToast();
+  const [dialogues, setDialogues] = useState<Dialogue[]>([]);
+  const podRef = useRef(pod);
+
+  // Keep latest pod reference without triggering effect
+  useEffect(() => {
+    podRef.current = pod;
+  }, [pod]);
+
   const chat = useVercelChat({
     api: "/api/chat",
+    id: podId,
     body: {
       format: "podcast",
       podcastOptions: options,
     },
-    onError,
-    onFinish: (message) => {
-      console.log("[Chat] Chat finished, final message:", message);
-      const dialogues = processDialogues(message.content);
-      if (dialogues.length === 0 && message.content.trim()) {
+    onError: (error) => {
+      console.error("[Chat] Error:", error);
+      if (onError) {
+        onError(error);
+      } else {
         toast({
-          title: "对话格式错误",
-          description: `AI 回复的内容未包含正确的对话格式，请重试:\n\n${message.content.slice(
-            0,
-            100
-          )}...`,
+          title: "对话生成失败",
+          description: "请稍后再试",
+          variant: "destructive",
         });
-        return;
       }
-      console.log("[Chat] Updating pod with final dialogues:", {
-        podId,
-        dialogues,
-      });
-      updatePod({
-        ...pod,
-        dialogues,
-        status: "ready",
-      });
     },
   });
 
-  const isDialoguesUpdated = (newDialogues: Dialogue[]) => {
-    // If pod or pod.dialogues is undefined, treat as update needed
-    if (!pod?.dialogues) return true;
+  const processDialogues = useCallback(
+    (content: string): Dialogue[] => {
+      const newDialogues: Dialogue[] = [];
+      const regex = /\[\[([^\]]+)\]\]:\s*(.*)/g;
+      let match;
 
-    // If lengths are different, update is needed
-    if (pod.dialogues.length !== newDialogues.length) {
-      return true;
-    }
-
-    // Compare each dialogue for changes
-    return newDialogues.some((newDialogue, index) => {
-      const existingDialogue = pod.dialogues[index];
-      return (
-        existingDialogue.id !== newDialogue.id ||
-        existingDialogue.host !== newDialogue.host ||
-        existingDialogue.content !== newDialogue.content
-      );
-    });
-  };
-
-  const processDialogues = (content: string): Dialogue[] => {
-    console.log("[Chat] Processing dialogues from content:", content);
-
-    const dialogues: Dialogue[] = [];
-    const regex = /\[\[([^\]]+)\]\]:\s*(.*)/g;
-    let match;
-
-    while ((match = regex.exec(content)) !== null) {
-      const [, hostName, rawContent] = match;
-      if (hostName && rawContent) {
-        const cleanContent = rawContent.trim();
-        if (cleanContent) {
-          const dialogue: Dialogue = {
-            id: `${podId}-${dialogues.length}`,
-            host: hostName,
-            content: cleanContent,
-          };
-          console.log("[Chat] Created dialogue:", dialogue);
-          dialogues.push(dialogue);
+      while ((match = regex.exec(content)) !== null) {
+        const [, hostName, rawContent] = match;
+        if (hostName && rawContent) {
+          const cleanContent = rawContent.trim();
+          if (cleanContent) {
+            const dialogue: Dialogue = {
+              id: `${podId}-${newDialogues.length}`,
+              host: hostName,
+              content: cleanContent,
+              audioUrl: podRef.current?.dialogues?.[newDialogues.length]?.audioUrl,
+            };
+            newDialogues.push(dialogue);
+          }
         }
       }
+      return newDialogues;
+    },
+    [podId]
+  );
+
+  const isDialoguesChanged = useCallback(
+    (newDialogues: Dialogue[]) => {
+      if (dialogues.length !== newDialogues.length) return true;
+
+      return newDialogues.some((newDialogue, index) => {
+        const existingDialogue = dialogues[index];
+        return (
+          existingDialogue.host !== newDialogue.host ||
+          existingDialogue.content !== newDialogue.content
+        );
+      });
+    },
+    [dialogues]
+  );
+
+  // Initialize dialogues from pod
+  useEffect(() => {
+    if (pod?.dialogues && !dialogues.length) {
+      setDialogues(pod.dialogues);
     }
+  }, [pod?.dialogues]);
 
-    return dialogues;
-  };
-
+  // Handle chat message updates
   useEffect(() => {
     const lastMessage = chat.messages[chat.messages.length - 1];
-    if (lastMessage?.role === "assistant" && !chat.isLoading) {
-      console.log("[Chat] Processing streaming message");
-      const dialogues = processDialogues(lastMessage.content);
-      if (dialogues.length === 0 && lastMessage.content.trim()) {
+    if (!lastMessage || lastMessage.role !== "assistant") return;
+
+    const content = lastMessage.content.trim();
+    if (!content) return;
+
+    const newDialogues = processDialogues(content);
+    if (newDialogues.length === 0) {
+      if (!chat.isLoading) {
         toast({
           title: "对话格式错误",
           description: "AI 回复的内容未包含正确的对话格式，请重试",
           variant: "destructive",
         });
-        return;
       }
-      if (dialogues.length > 0) {
-        console.log("[Chat] Updating pod with streaming dialogues:", {
-          podId,
-          dialogues,
+      return;
+    }
+
+    // Only update if dialogues have actually changed
+    if (isDialoguesChanged(newDialogues)) {
+      console.log("dialogues changed", dialogues, newDialogues);
+      // Always update local state for smooth UI updates
+      setDialogues(newDialogues);
+
+      // Only update backend when streaming is done
+      if (!chat.isLoading && podRef.current) {
+        // Update pod with new dialogues and status
+        updatePod({
+          ...podRef.current,
+          dialogues: newDialogues,
+          status: "ready",
+          updatedAt: new Date().toISOString(),
         });
-        if (isDialoguesUpdated(dialogues)) updateDialogues(dialogues);
       }
     }
-  }, [chat.messages, podId, updateDialogues, chat.isLoading, toast]);
+  }, [
+    chat.messages,
+    chat.isLoading,
+    processDialogues,
+    isDialoguesChanged,
+    updatePod,
+    toast,
+  ]);
 
-  return chat;
+  return {
+    ...chat,
+    dialogues,
+  };
 }

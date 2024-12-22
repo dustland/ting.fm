@@ -56,13 +56,6 @@ export async function uploadFile(
   }
 
   const ext = file.name.split(".").pop()?.toLowerCase();
-  // Validate file extension
-  const allowedExtensions = ["jpg", "jpeg", "png", "gif", "pdf", "doc", "docx"];
-  if (!ext || !allowedExtensions.includes(ext)) {
-    throw new Error(
-      `Invalid file type. Allowed types: ${allowedExtensions.join(", ")}`
-    );
-  }
 
   const path = `${nanoid()}.${ext}`;
 

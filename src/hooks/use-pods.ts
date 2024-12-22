@@ -127,11 +127,21 @@ export function usePods() {
     isLoading: isLoadingRemote,
   } = useSWR(API_ENDPOINT, fetcher);
 
+  // Only update pods from remote if there are actual changes
   useEffect(() => {
-    if (remotePods && Array.isArray(remotePods)) {
+    if (!remotePods || !Array.isArray(remotePods)) return;
+
+    // Convert pods to map for easier comparison
+    const localPodsMap = new Map(Object.entries(pods));
+    const hasChanges = remotePods.some((remotePod) => {
+      const localPod = localPodsMap.get(remotePod.id);
+      return !localPod || localPod.updatedAt !== remotePod.updatedAt;
+    });
+
+    if (hasChanges) {
       setPods(remotePods);
     }
-  }, [remotePods, setPods]);
+  }, [remotePods, pods, setPods]);
 
   const handleCreatePod = useCallback(
     async (title: string, source?: PodSource) => {
@@ -171,14 +181,14 @@ export function usePods() {
 
         const updatedPod = await response.json();
         updatePod(updatedPod.id, updatedPod);
-        mutate(API_ENDPOINT);
+        // Don't mutate here as it causes infinite loop
         return updatedPod;
       } catch (error) {
         console.error("[UPDATE_POD_ERROR]", error);
         throw error;
       }
     },
-    [addPod]
+    [updatePod]
   );
 
   const handleUpdateSource = useCallback(

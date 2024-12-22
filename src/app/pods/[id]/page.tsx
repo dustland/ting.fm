@@ -26,12 +26,15 @@ export default function PodPage({ params }: Props) {
   const [isGeneratingPodcast, setIsGeneratingPodcast] = useState(false);
   const { podcastSettings } = useSettingStore();
   const { pod, isLoading, isUpdating, updatePod, updateDialogue } = usePod(id);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const { append, isLoading: isGeneratingDialogues } = usePodChat({
+  const dialoguesEndRef = useRef<HTMLDivElement>(null);
+  const {
+    append,
+    isLoading: isGeneratingDialogues,
+    dialogues,
+  } = usePodChat({
     podId: id,
     options: podcastSettings,
-    onError: (error) => {
-      console.error(error);
+    onError: () => {
       toast({
         title: "对话生成失败",
         description: "请稍后再试",
@@ -50,6 +53,12 @@ export default function PodPage({ params }: Props) {
       router.push("/pods");
     }
   }, [pod, router, isLoading, toast]);
+
+  useEffect(() => {
+    if (dialoguesEndRef.current) {
+      dialoguesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [dialogues?.length]);
 
   if (!pod) {
     return (
@@ -78,7 +87,7 @@ export default function PodPage({ params }: Props) {
   };
 
   const handleGeneratePodcast = async () => {
-    if (!pod?.dialogues?.length) {
+    if (!dialogues?.length) {
       toast({
         title: "错误",
         description: "没有对话内容可以生成",
@@ -89,7 +98,7 @@ export default function PodPage({ params }: Props) {
 
     try {
       setIsGeneratingPodcast(true);
-      const audioPromises = pod.dialogues.map(async (dialogue, index) => {
+      const audioPromises = dialogues.map(async (dialogue, index) => {
         const response = await fetch("/api/tts", {
           method: "POST",
           credentials: "include",
@@ -98,7 +107,7 @@ export default function PodPage({ params }: Props) {
           },
           body: JSON.stringify({
             text: dialogue.content,
-            voice: dialogue.host === "host1" ? "onyx" : "nova",
+            voice: dialogue.host === "奥德彪" ? "onyx" : "nova",
           }),
         });
 
@@ -126,7 +135,7 @@ export default function PodPage({ params }: Props) {
 
       // Update each dialogue with its audio URL
       for (const { url, dialogueId } of audioResults) {
-        const dialogue = pod.dialogues.find((d) => d.id === dialogueId);
+        const dialogue = dialogues.find((d) => d.id === dialogueId);
         if (dialogue) {
           await updateDialogue(dialogue);
         }
@@ -149,7 +158,7 @@ export default function PodPage({ params }: Props) {
 
   const handleEdit = async (dialogueId: string, content: string) => {
     try {
-      const dialogue = pod?.dialogues?.find((d) => d.id === dialogueId);
+      const dialogue = dialogues?.find((d) => d.id === dialogueId);
       if (!dialogue) throw new Error("对话不存在");
 
       await updateDialogue({ ...dialogue, content });
@@ -236,7 +245,7 @@ export default function PodPage({ params }: Props) {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  {pod.dialogues?.length > 0 && (
+                  {dialogues?.length > 0 && (
                     <>
                       <Button
                         variant="outline"
@@ -260,8 +269,17 @@ export default function PodPage({ params }: Props) {
                         disabled={isGeneratingPodcast}
                         className="flex items-center gap-2"
                       >
-                        <Icons.podcast className="h-4 w-4" />
-                        {isGeneratingPodcast ? "生成中..." : "生成播客"}
+                        {isGeneratingPodcast ? (
+                          <>
+                            <Icons.spinner className="h-4 w-4 animate-spin" />
+                            <span>正在生成播客...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Icons.podcast className="h-4 w-4" />
+                            生成播客
+                          </>
+                        )}
                       </Button>
                     </>
                   )}
@@ -291,7 +309,7 @@ export default function PodPage({ params }: Props) {
               <CardContent className="p-0 h-full">
                 <ScrollArea className="h-full">
                   <div className="p-4 space-y-4">
-                    {pod?.dialogues?.length === 0 ? (
+                    {!dialogues?.length ? (
                       <div className="flex flex-col items-center justify-center w-full h-full text-center py-8 gap-4 text-muted-foreground">
                         <Icons.podcast className="mx-auto h-12 w-12 opacity-50" />
                         <p>根据原文内容生成播客剧本</p>
@@ -312,19 +330,21 @@ export default function PodPage({ params }: Props) {
                           )}
                         </Button>
                       </div>
+                    ) : isGeneratingDialogues ? (
+                      <div className="flex items-center justify-center p-8">
+                        <Icons.spinner className="w-6 h-6 animate-spin" />
+                      </div>
                     ) : (
-                      pod?.dialogues?.map((dialogue) => (
+                      dialogues?.map((dialogue) => (
                         <DialogueLine
                           key={dialogue.id}
-                          id={dialogue.id}
-                          host={dialogue.host}
-                          content={dialogue.content}
-                          audioUrl={dialogue.audioUrl}
+                          dialogue={dialogue}
                           onEdit={handleEdit}
                         />
                       ))
                     )}
                   </div>
+                  <div ref={dialoguesEndRef} />
                 </ScrollArea>
               </CardContent>
             </Card>

@@ -7,27 +7,18 @@ import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialogue } from "@/store/pod";
 
 interface DialogueLineProps {
-  id: string;
-  host: string;
-  content: string;
-  audioUrl?: string;
+  dialogue: Dialogue;
   className?: string;
   onEdit?: (id: string, content: string) => void;
 }
 
-export function DialogueLine({
-  id,
-  host,
-  content,
-  audioUrl,
-  className,
-  onEdit,
-}: DialogueLineProps) {
+export function DialogueLine({ dialogue, className, onEdit }: DialogueLineProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState(content);
+  const [editedContent, setEditedContent] = useState(dialogue.content);
   const [ttsState, setTtsState] = useState<{
     isLoading: boolean;
     isPlaying: boolean;
@@ -36,7 +27,7 @@ export function DialogueLine({
 
   const handleEdit = () => {
     if (!onEdit) return;
-    onEdit(id, editedContent);
+    onEdit(dialogue.id, editedContent);
     setIsEditing(false);
     toast({
       title: "对话已更新",
@@ -45,10 +36,10 @@ export function DialogueLine({
   };
 
   const generateTts = async (text: string) => {
-    if (audioUrl) {
+    if (dialogue.audioUrl) {
       // If we already have an audio URL, just play it
       if (audioRef.current) {
-        audioRef.current.src = audioUrl;
+        audioRef.current.src = dialogue.audioUrl;
         audioRef.current.play();
         setTtsState({ isLoading: false, isPlaying: true });
       }
@@ -65,7 +56,7 @@ export function DialogueLine({
         },
         body: JSON.stringify({
           text,
-          voice: host === "host1" ? "onyx" : "nova",
+          voice: dialogue.host === "奥德彪" ? "onyx" : "nova",
         }),
       });
 
@@ -96,11 +87,11 @@ export function DialogueLine({
       audioRef.current.pause();
       setTtsState({ ...ttsState, isPlaying: false });
     } else {
-      if (audioUrl || audioRef.current.src) {
+      if (dialogue.audioUrl || audioRef.current.src) {
         audioRef.current.play();
         setTtsState({ isLoading: false, isPlaying: true });
       } else {
-        generateTts(content);
+        generateTts(dialogue.content);
       }
     }
   };
@@ -109,12 +100,14 @@ export function DialogueLine({
     <div
       className={cn(
         "flex gap-3 p-3 rounded-lg items-start",
-        host === "host1" ? "bg-muted/50" : "bg-background",
+        dialogue.host === "奥德彪" ? "bg-muted/50" : "bg-background",
         className
       )}
     >
       <Avatar className="h-8 w-8 mt-1">
-        <AvatarFallback className="text-xs">{host === "host1" ? "H1" : "H2"}</AvatarFallback>
+        <AvatarFallback className="text-xs">
+          {dialogue.host === "奥德彪" ? "H1" : "H2"}
+        </AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
         {isEditing ? (
@@ -125,13 +118,15 @@ export function DialogueLine({
               className="min-h-[100px] mb-2"
             />
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleEdit}>保存</Button>
+              <Button size="sm" onClick={handleEdit}>
+                保存
+              </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => {
                   setIsEditing(false);
-                  setEditedContent(content);
+                  setEditedContent(dialogue.content);
                 }}
               >
                 取消
@@ -140,7 +135,9 @@ export function DialogueLine({
           </>
         ) : (
           <>
-            <p className="text-sm leading-6 break-words whitespace-pre-wrap">{content}</p>
+            <p className="text-sm leading-6 break-words whitespace-pre-wrap">
+              {dialogue.content}
+            </p>
             <div className="flex items-center gap-1 mt-2">
               <Button
                 variant="ghost"

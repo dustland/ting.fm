@@ -27,7 +27,7 @@ export default function PodPage({ params }: Props) {
   const { podcastSettings } = useSettingStore();
   const { pod, isLoading, isUpdating, updatePod, updateDialogue } = usePod(id);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { append } = usePodChat({
+  const { append, isLoading: isGeneratingDialogues } = usePodChat({
     podId: id,
     options: podcastSettings,
     onError: (error) => {
@@ -245,8 +245,17 @@ export default function PodPage({ params }: Props) {
                         onClick={handleGenerateDialogues}
                         className="flex items-center gap-2"
                       >
-                        <Icons.wand className="h-4 w-4" />
-                        重新生成剧本
+                        {isGeneratingDialogues ? (
+                          <>
+                            <Icons.spinner className="h-4 w-4 animate-spin" />
+                            <span>正在生成播客剧本...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Icons.wand className="h-4 w-4" />
+                            重新生成剧本
+                          </>
+                        )}
                       </Button>
                       <Button
                         onClick={handleGeneratePodcast}
@@ -262,8 +271,17 @@ export default function PodPage({ params }: Props) {
                       onClick={handleGenerateDialogues}
                       className="flex items-center gap-2"
                     >
-                      <Icons.wand className="h-4 w-4" />
-                      生成剧本
+                      {isGeneratingDialogues ? (
+                        <>
+                          <Icons.spinner className="h-4 w-4 animate-spin" />
+                          <span>正在生成播客剧本...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Icons.wand className="h-4 w-4" />
+                          生成播客剧本
+                        </>
+                      )}
                     </Button>
                   )}
                 </div>

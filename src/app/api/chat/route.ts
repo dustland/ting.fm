@@ -17,6 +17,14 @@ export async function POST(req: Request) {
     // Extract the `messages` from the body of the request
     const { messages, format = "text", podcastOptions } = await req.json();
 
+    const content = messages[messages.length - 1]?.content;
+    if ((format === "podcast" && !content) || typeof content !== "string") {
+      return new Response(JSON.stringify({ error: "Content is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
         JSON.stringify({ error: "Messages array is required" }),
@@ -51,63 +59,82 @@ export async function POST(req: Request) {
 
     if (format === "podcast") {
       // Generate the podcast script
-      const result = streamText({
+      const requestBody = {
         model: openai("gpt-4o"),
         messages: [
           {
             role: "system",
-            content: `你是一位擅长制作轻松愉快播客的制作人。你的节目总是能让听众感觉像在和朋友聊天一样舒服自在。
+            content:
+              "You are a skilled podcast scriptwriter specializing in creating engaging and natural dialogues between hosts. Your task is to craft a 15-minute conversation between hosts, ensuring the dialogue is relaxed, friendly, and informative, resembling a casual chat between friends.",
+          },
+          {
+            role: "user",
+            content: `Please create a 3-minute podcast dialogue based on the following article:
 
-请创建一个约${finalPodcastOptions.duration}分钟的轻松对话，主持人：
+${content}
+
+**Hosts:**
 ${finalPodcastOptions.hosts
   .map(
     (host) =>
-      `- ${host.name}（${host.gender === "male" ? "男" : "女"}主持人）：${
+      `- **${host.name}** (${host.gender === "male" ? "男性" : "女性"}) – ${
         host.personality
       }`
   )
   .join("\n")}
 
-对话格式：
-1. 每句话以 <${finalPodcastOptions.hosts
-              .map((h) => h.id)
-              .join("|")}> 开头标识说话人，如：
-   <host1>大家好啊，我是${finalPodcastOptions.hosts[0].name}。
-   <host2>我是${finalPodcastOptions.hosts[1].name}，又到了我们闲聊的时间了。
+**Dialogue Format:**
+1. Each line should begin with the host's name, e.g.,
+   - [[${finalPodcastOptions.hosts[0].name}]]: 大家好，我是${
+              finalPodcastOptions.hosts[0].name
+            }。
+   - [[${finalPodcastOptions.hosts[1].name}]]: 我是${
+              finalPodcastOptions.hosts[1].name
+            }，今天我们来聊聊这个话题。
 
-对话风格：
-- 像朋友间的闲聊一样轻松自然，不要太正式
-- 可以开一些无伤大雅的玩笑，增添趣味性
-- 用轻松的语气讨论话题，不要太严肃
-- 适当分享一些生活中的小故事或经历
-- 偶尔的俏皮话或幽默感会让对话更有趣
-- 遇到专业话题时用生活化的比喻来解释
+**Dialogue Style:**
+- 对话要自然流畅，像朋友间的闲聊
+- 适当加入轻松的玩笑增添趣味
+- 以轻松的方式讨论话题，避免过于正式
+- 分享相关的个人经历或感受
+- 使用简单的比喻来解释复杂概念
+- 偶尔加入幽默或俏皮的评论
 
-内容要求：
-- 用聊天的方式自然引入话题，不要生硬
-- 两位主持人要有互动和默契，像老朋友一样聊天
-- 用简单有趣的例子解释复杂概念
-- 保持对话的节奏感，但不要太快节奏
-- 适当使用日常用语，让听众感觉亲切
-- 每分钟约150-200字
-- 循序渐进地展开话题，不要太急着深入
-- 主持人之间要用名字互相称呼，像朋友一样
-- 适时用轻松的方式总结重点
-- 结尾要温暖自然，让听众意犹未尽
+**Content Guidelines:**
+- 在对话中自然地引入话题
+- 确保主持人之间互动流畅，展现默契
+- 使用生活化的例子来解释复杂概念
+- 保持适中的讨论节奏，不要过于仓促
+- 使用日常用语创造亲切的氛围
+- 每分钟大约150-200字
+- 循序渐进地深入话题，避免突兀
+- 主持人要互相称呼名字，体现友好关系
+- 以轻松的方式总结要点
+- 自然地结束对话，让听众意犹未尽
 
-注意事项：
-- 这是播客节目，要让听众感觉在收听一场轻松的谈话
-- 避免过于严肃或学术化的表达
-- 使用日常生活中常见的比喻
-- 每句话都要自然流畅
-- 不要加入表情或动作描述
-- 可以有一些俏皮话，但不要过度搞笑
-- 保持温暖友好的语气，让听众感觉舒服`,
+**Additional Notes:**
+- 记住这是播客，让听众感觉像是在参与朋友间的聊天
+- 避免过于严肃或学术化的语言
+- 使用大众熟悉的比喻
+- 确保每句话都自然流畅
+- 不要包含表情或动作的描述
+- 加入有趣的评论但不要过度搞笑
+- 始终保持温暖友好的语气
+
+请用中文输出对话内容。`,
           },
           ...messages,
         ],
         temperature: 0.7,
-      });
+      };
+
+      console.log(
+        "Generating podcast script with finalPodcastOptions:",
+        finalPodcastOptions
+      );
+      console.log("Generating podcast script with requestBody:", requestBody);
+
+      const result = streamText(requestBody);
 
       return result.toDataStreamResponse();
     } else {

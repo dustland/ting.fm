@@ -63,7 +63,7 @@ export default function PodPage({ params }: Props) {
     if (!pod?.source) return;
 
     try {
-      const response = await append({
+      await append({
         role: "user",
         content: pod.source.content,
       });
@@ -174,7 +174,7 @@ export default function PodPage({ params }: Props) {
         return <Icons.upload className="h-4 w-4" />;
       case "text":
         return <Icons.text className="h-4 w-4" />;
-      case "channel":
+      case "arxiv":
         return <Icons.sparkles className="h-4 w-4 text-emerald-500" />;
       default:
         return <Icons.text className="h-4 w-4" />;
@@ -189,14 +189,12 @@ export default function PodPage({ params }: Props) {
         return "文件";
       case "text":
         return "文本";
-      case "channel":
-        return "主动探寻";
+      case "arxiv":
+        return "论文";
       default:
         return "文本";
     }
   };
-
-  console.log(pod);
 
   return (
     <div className="h-[calc(100vh-var(--navbar-height))] container flex flex-col py-2">
@@ -238,7 +236,7 @@ export default function PodPage({ params }: Props) {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  {pod.dialogues?.length > 0 ? (
+                  {pod.dialogues?.length > 0 && (
                     <>
                       <Button
                         variant="outline"
@@ -266,23 +264,6 @@ export default function PodPage({ params }: Props) {
                         {isGeneratingPodcast ? "生成中..." : "生成播客"}
                       </Button>
                     </>
-                  ) : (
-                    <Button
-                      onClick={handleGenerateDialogues}
-                      className="flex items-center gap-2"
-                    >
-                      {isGeneratingDialogues ? (
-                        <>
-                          <Icons.spinner className="h-4 w-4 animate-spin" />
-                          <span>正在生成播客剧本...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Icons.wand className="h-4 w-4" />
-                          生成播客剧本
-                        </>
-                      )}
-                    </Button>
                   )}
                 </div>
               </div>
@@ -311,10 +292,25 @@ export default function PodPage({ params }: Props) {
                 <ScrollArea className="h-full">
                   <div className="p-4 space-y-4">
                     {pod?.dialogues?.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Icons.podcast className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                        <p>还没有对话内容</p>
-                        <p className="text-sm">点击"生成对话"开始创建</p>
+                      <div className="flex flex-col items-center justify-center w-full h-full text-center py-8 gap-4 text-muted-foreground">
+                        <Icons.podcast className="mx-auto h-12 w-12 opacity-50" />
+                        <p>根据原文内容生成播客剧本</p>
+                        <Button
+                          onClick={handleGenerateDialogues}
+                          className="flex items-center gap-2"
+                        >
+                          {isGeneratingDialogues ? (
+                            <>
+                              <Icons.spinner className="h-4 w-4 animate-spin" />
+                              <span>正在生成播客剧本...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Icons.wand className="h-4 w-4" />
+                              生成播客剧本
+                            </>
+                          )}
+                        </Button>
                       </div>
                     ) : (
                       pod?.dialogues?.map((dialogue) => (
@@ -354,36 +350,20 @@ export default function PodPage({ params }: Props) {
                             {pod.source.type === "paper" &&
                               pod.source.metadata?.categories &&
                               pod.source.metadata.categories[0] && (
-                                <div className="flex items-center gap-1">
-                                  <Icons.arxiv className="h-4 w-4" />
-                                  <span>
-                                    {pod.source.metadata.categories[0]}
-                                  </span>
+                                <div className="flex items-center gap-1 w-full">
+                                  <Icons.arxiv className="h-4 w-4 shrink-0" />
+                                  {pod.source.metadata.categories.map(
+                                    (category, index) => (
+                                      <span
+                                        key={index}
+                                        className="nowrap max-w-48 truncate p-1 border rounded-md bg-muted"
+                                      >
+                                        {category}
+                                      </span>
+                                    )
+                                  )}
                                 </div>
                               )}
-
-                            {/* Authors */}
-                            {pod.source.metadata?.authors &&
-                              pod.source.metadata.authors.length > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <Icons.users className="h-4 w-4" />
-                                  <span>
-                                    {pod.source.metadata.authors.join(", ")}
-                                  </span>
-                                </div>
-                              )}
-
-                            {/* Categories */}
-                            {pod.source.metadata?.categories &&
-                              pod.source.metadata.categories.length > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <Icons.tag className="h-4 w-4" />
-                                  <span>
-                                    {pod.source.metadata.categories.join(", ")}
-                                  </span>
-                                </div>
-                              )}
-
                             {/* Dates */}
                             {pod.source.metadata?.createdAt && (
                               <div className="flex items-center gap-1">
@@ -421,6 +401,16 @@ export default function PodPage({ params }: Props) {
                                 <span>PDF</span>
                               </a>
                             )}
+                            {/* Authors */}
+                            {pod.source.metadata?.authors &&
+                              pod.source.metadata.authors.length > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <Icons.users className="h-4 w-4" />
+                                  <span>
+                                    {pod.source.metadata.authors.join(", ")}
+                                  </span>
+                                </div>
+                              )}
                           </div>
                         </div>
                       )}

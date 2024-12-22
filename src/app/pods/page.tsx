@@ -20,36 +20,34 @@ export default function PodsPage() {
   }, [pods]);
 
   return (
-    <div className="container py-8">
-      <div className="mb-8">
+    <div className="container px-2 sm:px-4 py-4 sm:py-8">
+      <div className="mb-4 sm:mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">我的播客</h1>
-            <p className="text-muted-foreground">管理和查看您创建的所有播客</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">我的播客</h1>
+            <p className="text-muted-foreground">管理您的所有播客</p>
           </div>
           {podsList.length > 0 && (
-            <CreatePodDialog
-              trigger={
-                <Button>
-                  <Icons.create className="mr-2 h-4 w-4" />
-                  新建播客
-                </Button>
-              }
-            />
+            <CreatePodDialog>
+              <Button>
+                <Icons.plus className="mr-2 h-4 w-4" />
+                新建播客
+              </Button>
+            </CreatePodDialog>
           )}
         </div>
       </div>
 
       {podsList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="text-center space-y-2 mb-8">
+        <div className="flex flex-col items-center justify-center space-y-4 py-8">
+          <div className="text-center space-y-2">
             <h2 className="text-xl font-semibold">还没有播客</h2>
             <p className="text-muted-foreground">创建您的第一个播客吧！</p>
           </div>
-          <CreatePodCard className="max-w-2xl w-full" />
+          <CreatePodCard className="max-w-full lg:max-w-2xl w-full" />
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {podsList.map((pod) => (
             <PodCard key={pod.id} podId={pod.id} />
           ))}

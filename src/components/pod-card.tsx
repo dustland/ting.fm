@@ -70,9 +70,9 @@ export function PodCard({ podId, className }: PodCardProps) {
   };
 
   return (
-    <Card className={cn("flex flex-col p-2", className)}>
-      <CardHeader className="p-2">
-        <div className="flex items-center space-x-2 border-b pb-2">
+    <Card className={cn("flex flex-col p-1 sm:p-2 h-full", className)}>
+      <CardHeader className="p-1.5 sm:p-2">
+        <div className="flex items-center space-x-2 border-b pb-1.5 sm:pb-2">
           {pod.source?.metadata?.favicon ? (
             <Image
               src={pod.source.metadata.favicon}
@@ -84,29 +84,24 @@ export function PodCard({ podId, className }: PodCardProps) {
           ) : (
             <Icons.podcast className="h-4 w-4 shrink-0" />
           )}
-          <CardTitle className="flex flex-1 line-clamp-1 text-base">
+          <CardTitle className="flex flex-1 line-clamp-1 text-sm sm:text-base">
             {pod.title || pod.source?.metadata?.title || "未命名播客"}
           </CardTitle>
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => deletePod()}
-            className="text-red-300 hover:text-red-500"
-            disabled={status.isLoading && status.operation === "delete"}
+            onClick={() => deletePod(pod.id)}
+            className="text-red-300 hover:text-red-500 shrink-0"
           >
-            {status.isLoading && status.operation === "delete" ? (
-              <Icons.spinner className="h-4 w-4 animate-spin" />
-            ) : (
-              <Icons.trash className="h-4 w-4" />
-            )}
+            <Icons.trash className="h-4 w-4" />
           </Button>
         </div>
-        <CardDescription className="line-clamp-4">
+        <CardDescription className="line-clamp-3 sm:line-clamp-4 mt-1.5 sm:mt-2 text-sm">
           {pod.source?.metadata?.description || pod.source?.content}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 p-2">
-        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+      <CardContent className="flex-1 p-1.5 sm:p-2">
+        <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
           {pod.source && (
             <>
               {getSourceTypeIcon(pod.source.type)}
@@ -121,18 +116,18 @@ export function PodCard({ podId, className }: PodCardProps) {
           )}
         </div>
       </CardContent>
-      <CardFooter className="flex items-center justify-between p-2">
+      <CardFooter className="flex items-center justify-between p-1.5 sm:p-2">
         <Badge
           variant="outline"
-          className="flex items-center space-x-2 text-sm text-muted-foreground"
+          className="flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm text-muted-foreground"
         >
           {getStatusIcon(pod.status)}
           <span>{getStatusText(pod.status)}</span>
         </Badge>
-        <Button variant="ghost" asChild>
+        <Button variant="ghost" asChild className="text-sm">
           <Link href={`/pods/${pod.id}`}>
             编辑
-            <Icons.chevronRight className="ml-2 h-4 w-4" />
+            <Icons.chevronRight className="ml-1.5 sm:ml-2 h-4 w-4" />
           </Link>
         </Button>
       </CardFooter>

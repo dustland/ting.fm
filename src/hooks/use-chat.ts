@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useChat as useVercelChat, Message } from "ai/react";
-import { usePods } from "./use-pods";
+import { usePod } from "./use-pods";
 import { Dialogue } from "@/store/pod";
 import { PodcastSettings } from "@/store/setting";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +12,7 @@ interface UsePodChatOptions {
 }
 
 export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
-  const { updatePod } = usePods(podId);
+  const { updatePod } = usePod(podId);
   const { toast } = useToast();
   const chat = useVercelChat({
     api: "/api/chat",
@@ -30,8 +30,7 @@ export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
           description: `AI 回复的内容未包含正确的对话格式，请重试:\n\n${message.content.slice(
             0,
             100
-          )}`,
-          variant: "destructive",
+          )}...`,
         });
         return;
       }
@@ -39,7 +38,7 @@ export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
         podId,
         dialogues,
       });
-      updatePod(podId, {
+      updatePod({
         dialogues,
         status: "ready",
       });
@@ -90,7 +89,7 @@ export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
           podId,
           dialogues,
         });
-        updatePod(podId, {
+        updatePod({
           dialogues,
           status: "ready",
         });

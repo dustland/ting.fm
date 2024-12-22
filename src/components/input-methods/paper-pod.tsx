@@ -67,11 +67,12 @@ interface PaperPodProps {
 }
 
 export function PaperPod({ onSubmit, isLoading }: PaperPodProps) {
-  const [selectedTopic, setSelectedTopic] = useState<string>("");
+  const [selectedTopic, setSelectedTopic] = useState<string>("psychology");
   const [customKeywords, setCustomKeywords] = useState<string>("");
   const [papers, setPapers] = useState<ArxivPaper[]>([]);
   const [selectedPaper, setSelectedPaper] = useState<ArxivPaper | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
 
   const handleSearch = async () => {
     if (!selectedTopic) return;
@@ -98,23 +99,33 @@ export function PaperPod({ onSubmit, isLoading }: PaperPodProps) {
   const handleSubmit = async () => {
     if (!selectedPaper) return;
 
-    await onSubmit({
-      type: "paper",
-      content: JSON.stringify({
-        paper: selectedPaper,
-        topicId: selectedTopic,
-      }),
-      metadata: {
-        title: selectedPaper.title,
-        authors: selectedPaper.authors,
-        summary: selectedPaper.summary,
-        link: selectedPaper.link,
-        pdfLink: selectedPaper.pdfLink,
-        createdAt: selectedPaper.published,
-        updatedAt: selectedPaper.updated,
-        categories: selectedPaper.categories,
-      },
-    });
+    try {
+      setIsFetching(true);
+      // Get paper content from arXiv source
+      const arxiv = new ArxivService();
+      const content = await arxiv.getPaperSource(selectedPaper.id);
+      setIsFetching(false);
+
+      await onSubmit({
+        type: "paper",
+        content,
+        metadata: {
+          title: selectedPaper.title,
+          authors: selectedPaper.authors,
+          summary: selectedPaper.summary,
+          link: selectedPaper.link,
+          pdfLink: selectedPaper.pdfLink,
+          createdAt: selectedPaper.published,
+          updatedAt: selectedPaper.updated,
+          categories: selectedPaper.categories,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to process paper:", error);
+      throw error;
+    } finally {
+      setIsFetching(false);
+    }
   };
 
   return (
@@ -123,7 +134,7 @@ export function PaperPod({ onSubmit, isLoading }: PaperPodProps) {
         从 arXiv 获取最新研究论文并生成播客
       </p>
       <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-        <SelectTrigger className="h-20 text-left">
+        <SelectTrigger className="h-auto text-left py-2">
           <SelectValue placeholder="选择研究领域">
             {selectedTopic && (
               <div className="flex flex-col">
@@ -210,11 +221,7 @@ export function PaperPod({ onSubmit, isLoading }: PaperPodProps) {
             </SelectTrigger>
             <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-full">
               {papers.map((paper) => (
-                <SelectItem
-                  key={paper.id}
-                  value={paper.id}
-                  className="py-3"
-                >
+                <SelectItem key={paper.id} value={paper.id} className="py-3">
                   <div className="flex flex-col gap-1 min-w-0 max-w-full">
                     <div className="font-medium line-clamp-2 break-words">
                       {paper.title}
@@ -254,10 +261,10 @@ export function PaperPod({ onSubmit, isLoading }: PaperPodProps) {
         disabled={isLoading || !selectedPaper}
         className="w-full"
       >
-        {isLoading ? (
+        {isLoading || isFetching ? (
           <>
             <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-            正在生成科研播课...
+            正在生成科研播客...
           </>
         ) : (
           <>

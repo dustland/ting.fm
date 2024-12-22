@@ -45,11 +45,12 @@ const podSchema = z.object({
 // GET /api/pods/[id]
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
     const user = await getUser();
+    const resolvedParams = await params;
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -58,7 +59,7 @@ export async function GET(
     const { data: pod, error } = await supabase
       .from("pods")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", resolvedParams.id)
       .eq("user_id", user.id)
       .single();
 
@@ -92,11 +93,13 @@ export async function GET(
 // PATCH /api/pods/[id]
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
     const user = await getUser();
+    const resolvedParams = await params;
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -107,7 +110,7 @@ export async function PATCH(
     const { data: pod, error } = await supabase
       .from("pods")
       .update(validatedData)
-      .eq("id", params.id)
+      .eq("id", resolvedParams.id)
       .eq("user_id", user.id)
       .select()
       .single();
@@ -148,11 +151,12 @@ export async function PATCH(
 // DELETE /api/pods/[id]
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
     const user = await getUser();
+    const resolvedParams = await params;
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -161,7 +165,7 @@ export async function DELETE(
     const { error } = await supabase
       .from("pods")
       .delete()
-      .eq("id", params.id)
+      .eq("id", resolvedParams.id)
       .eq("user_id", user.id);
 
     if (error) throw error;

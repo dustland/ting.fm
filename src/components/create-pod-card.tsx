@@ -13,6 +13,7 @@ import { TextInput } from "./input-methods/text-input";
 import { PaperPod } from "./input-methods/paper-pod";
 import { cn } from "@/lib/utils";
 import { PodSource } from "@/store/pod";
+import Image from "next/image";
 
 interface CreatePodCardProps {
   onCreated?: (podId: string) => void;
@@ -63,8 +64,13 @@ export function CreatePodCard({ onCreated, className }: CreatePodCardProps) {
         <Tabs defaultValue="paper" className="w-full">
           <TabsList className="grid w-full grid-cols-4 mb-4">
             <TabsTrigger value="paper" className="flex items-center gap-2">
-              <Icons.graduationCap className="h-4 w-4" />
-              <span className="hidden sm:inline-block">arXiv</span>
+              <Image
+                src="/arxiv-logo.svg"
+                width={120}
+                height={20}
+                alt="arxiv"
+                className="h-4 w-auto"
+              />
             </TabsTrigger>
             <TabsTrigger value="text" className="flex items-center gap-2">
               <Icons.edit className="h-4 w-4" />

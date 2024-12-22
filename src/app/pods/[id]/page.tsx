@@ -315,87 +315,71 @@ export default function PodPage({ params }: Props) {
               <CardContent className="p-0 h-full">
                 <ScrollArea className="h-full">
                   {pod?.source ? (
-                    <div className="p-6 space-y-6">
-                      {/* Source Type Badge */}
-                      <div className="flex items-center justify-between">
-                        <Badge
-                          variant="outline"
-                          className="flex items-center gap-2"
-                        >
-                          {pod.source.type === "url" && (
-                            <Icons.link className="h-4 w-4" />
-                          )}
-                          {pod.source.type === "file" && (
-                            <Icons.upload className="h-4 w-4" />
-                          )}
-                          {pod.source.type === "text" && (
-                            <Icons.text className="h-4 w-4" />
-                          )}
-                          {pod.source.type === "paper" && (
-                            <Icons.sparkles className="h-4 w-4 text-emerald-500" />
-                          )}
-                          <span>
-                            {pod.source.type === "url" && "网页内容"}
-                            {pod.source.type === "file" && "上传文件"}
-                            {pod.source.type === "text" && "文本输入"}
-                            {pod.source.type === "paper" && "AI 助手"}
-                          </span>
-                        </Badge>
-                        {pod.source.metadata?.wordCount && (
-                          <div className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Icons.documentText className="h-4 w-4" />
-                            <span>{pod.source.metadata.wordCount} 字</span>
-                          </div>
-                        )}
-                      </div>
+                    <div className="p-6">
+                      {/* Header Section */}
+                      {pod.source && (
+                        <div className="flex flex-col space-y-4 pb-6 border-b">
+                          {/* Title and External Link */}
+                          <h1 className="text-xl font-semibold tracking-tight">
+                            {pod.source.metadata?.title || pod.title}
+                          </h1>
 
-                      {/* Metadata Section */}
-                      {pod.source.metadata && (
-                        <div className="flex items-start gap-6 p-4 bg-muted/50 rounded-lg">
-                          {/* Image */}
-                          {pod.source.metadata.image && (
-                            <div className="relative w-32 h-32 rounded-lg overflow-hidden shrink-0 bg-background">
-                              <Image
-                                src={pod.source.metadata.image}
-                                alt={pod.source.metadata.title || ""}
-                                fill
-                                sizes="128px"
-                                className="object-cover"
-                              />
-                            </div>
-                          )}
-
-                          {/* Metadata Details */}
-                          <div className="flex-1 min-w-0 space-y-3">
-                            {/* Title */}
-                            {pod.source.metadata.title && (
-                              <h3 className="font-semibold text-lg line-clamp-2">
-                                {pod.source.metadata.title}
-                              </h3>
+                          {/* Metadata Section */}
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                            {/* Type Badge */}
+                            {pod.source.type === "paper" && pod.source.metadata?.categories && pod.source.metadata.categories[0] && (
+                              <div className="flex items-center gap-1">
+                                <Icons.arxiv className="h-4 w-4" />
+                                <span>{pod.source.metadata.categories[0]}</span>
+                              </div>
                             )}
 
-                            {/* URL */}
-                            {pod.source.metadata.url && (
+                            {/* Authors */}
+                            {pod.source.metadata?.authors && pod.source.metadata.authors.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Icons.users className="h-4 w-4" />
+                                <span>{pod.source.metadata.authors.join(", ")}</span>
+                              </div>
+                            )}
+                            
+                            {/* Categories */}
+                            {pod.source.metadata?.categories && pod.source.metadata.categories.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Icons.tag className="h-4 w-4" />
+                                <span>{pod.source.metadata.categories.join(", ")}</span>
+                              </div>
+                            )}
+
+                            {/* Dates */}
+                            {pod.source.metadata?.createdAt && (
+                              <div className="flex items-center gap-1">
+                                <Icons.calendar className="h-4 w-4" />
+                                <span>发布于 {new Date(pod.source.metadata.createdAt).toLocaleDateString("zh-CN")}</span>
+                              </div>
+                            )}
+
+                            {/* Links */}
+                            {pod.source.metadata?.link && (
                               <a
-                                href={pod.source.metadata.url}
+                                href={pod.source.metadata.link}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-sm hover:underline flex items-center gap-2 text-muted-foreground"
+                                className="inline-flex items-center gap-1 hover:text-foreground"
                               >
-                                {pod.source.metadata.favicon && (
-                                  <Image
-                                    src={pod.source.metadata.favicon}
-                                    alt=""
-                                    width={16}
-                                    height={16}
-                                    className="rounded"
-                                  />
-                                )}
-                                <span className="truncate">
-                                  {pod.source.metadata.siteName ||
-                                    pod.source.metadata.url}
-                                </span>
-                                <Icons.externalLink className="h-3 w-3 shrink-0" />
+                                <Icons.externalLink className="h-4 w-4" />
+                                <span>原文</span>
+                              </a>
+                            )}
+
+                            {pod.source.metadata?.pdfLink && (
+                              <a
+                                href={pod.source.metadata.pdfLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 hover:text-foreground"
+                              >
+                                <Icons.fileText className="h-4 w-4" />
+                                <span>PDF</span>
                               </a>
                             )}
                           </div>
@@ -403,42 +387,31 @@ export default function PodPage({ params }: Props) {
                       )}
 
                       {/* Content Section */}
-                      <div className="prose prose-sm max-w-none">
+                      <div className="mt-6">
                         {pod.source.type === "paper" && pod.source.metadata && (
                           <div className="space-y-6">
                             {pod.source.metadata.summary && (
                               <div className="mt-4">
-                                <h3 className="font-medium text-sm mb-2">
-                                  摘要
-                                </h3>
-                                <p className="text-sm text-muted-foreground">
-                                  {pod.source.metadata.summary}
-                                </p>
+                                <h3 className="font-medium text-sm mb-2">摘要</h3>
+                                <p className="text-sm text-muted-foreground">{pod.source.metadata.summary}</p>
                               </div>
                             )}
                           </div>
                         )}
                         {pod.source.type !== "paper" && pod.source.content && (
                           <div className="space-y-4">
-                            {pod.source.content
-                              .split("\n")
-                              .map((paragraph, index) => (
-                                <p
-                                  key={index}
-                                  className="text-sm text-muted-foreground"
-                                >
-                                  {paragraph}
-                                </p>
-                              ))}
+                            {pod.source.content.split("\n").map((paragraph, index) => (
+                              <p key={index} className="text-sm text-muted-foreground">
+                                {paragraph}
+                              </p>
+                            ))}
                           </div>
                         )}
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground">
-                      <Icons.file className="h-12 w-12 mb-4 opacity-50" />
-                      <p>还没有内容</p>
-                      <p className="text-sm">请先添加内容再生成对话</p>
+                    <div className="p-8 text-center text-muted-foreground">
+                      <p>播客内容加载中...</p>
                     </div>
                   )}
                 </ScrollArea>

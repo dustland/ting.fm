@@ -53,6 +53,7 @@ import {
   LucideProps,
   LetterText,
   FileUp,
+  Download,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -115,6 +116,8 @@ export const Icons = {
   home: Home,
   create: Plus,
   discover: Compass,
+  download: Download,
+  headphones: Headphones,
   upload: Upload,
   link: Link,
   globe: Globe,

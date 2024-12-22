@@ -69,6 +69,23 @@ export function PodCard({ podId, className }: PodCardProps) {
     }
   };
 
+  const statusVariants = {
+    draft: "outline",
+    ready: "secondary",
+    published: "default",
+  } as const;
+
+  const statusLabels = {
+    draft: "草稿",
+    ready: "已就绪",
+    published: "已发布",
+  };
+
+  const formatDate = (date: Date) => {
+    // Assuming date is in ISO format
+    return new Date(date).toLocaleDateString();
+  };
+
   return (
     <Card className={cn("flex flex-col p-1 sm:p-2 h-full", className)}>
       <CardHeader className="p-1.5 sm:p-2">
@@ -84,8 +101,19 @@ export function PodCard({ podId, className }: PodCardProps) {
           ) : (
             <Icons.podcast className="h-4 w-4 shrink-0" />
           )}
-          <CardTitle className="flex flex-1 line-clamp-1 text-sm sm:text-base">
-            {pod.title || pod.source?.metadata?.title || "未命名播客"}
+          <CardTitle className="flex items-center justify-between">
+            <span className="truncate">{pod.title}</span>
+            <div className="flex items-center gap-2">
+              {pod.audioUrl && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <Icons.headphones className="h-3 w-3" />
+                  已生成音频
+                </Badge>
+              )}
+              <Badge variant={statusVariants[pod.status]}>
+                {statusLabels[pod.status]}
+              </Badge>
+            </div>
           </CardTitle>
           <Button
             variant="ghost"
@@ -121,21 +149,12 @@ export function PodCard({ podId, className }: PodCardProps) {
         </div>
       </CardContent>
       <CardFooter className="flex items-center justify-between p-1.5 sm:p-2">
-        <Badge
-          variant="outline"
-          className="flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm text-muted-foreground"
-        >
-          {getStatusIcon(pod.status)}
-          <span>{getStatusText(pod.status)}</span>
-        </Badge>
-        <Button
-          variant="ghost"
-          asChild
-          className="text-muted-foreground text-xs sm:text-sm"
-        >
+        <div className="text-sm text-muted-foreground">
+          {formatDate(new Date(pod.createdAt))}
+        </div>
+        <Button variant="ghost" size="icon" asChild>
           <Link href={`/pods/${pod.id}`}>
-            编辑
-            <Icons.chevronRight className="ml-1.5 sm:ml-2 h-4 w-4" />
+            <Icons.chevronRight className="h-4 w-4" />
           </Link>
         </Button>
       </CardFooter>

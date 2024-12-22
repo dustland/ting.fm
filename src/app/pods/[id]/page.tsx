@@ -304,6 +304,29 @@ export default function PodPage({ params }: Props) {
                           </>
                         )}
                       </Button>
+                      {pod.audioUrl && (
+                        <div className="flex items-center gap-2">
+                          <audio
+                            controls
+                            src={pod.audioUrl}
+                            className="h-8 max-w-[300px]"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            asChild
+                          >
+                            <a
+                              href={pod.audioUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="下载音频"
+                            >
+                              <Icons.download className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>

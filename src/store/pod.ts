@@ -45,7 +45,6 @@ export interface PodSource {
 export interface Pod {
   id: string;
   title: string;
-  url: string;
   source?: PodSource;
   dialogues: Dialogue[];
   createdAt: string;

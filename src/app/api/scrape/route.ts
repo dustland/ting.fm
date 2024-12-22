@@ -190,7 +190,11 @@ export async function POST(req: NextRequest) {
         readingTime,
         wordCount,
       },
-      content: article.textContent,
+      content: article.textContent
+        .replace(/\u0000/g, '') // Remove null characters
+        .split('\n')
+        .filter(line => line.trim())
+        .join('\n'),
     };
 
     return Response.json(response);

@@ -8,7 +8,7 @@ import { CrawlRequest } from "@/app/api/scrape/route"
 import { PodSource } from "@/store/pod";
 
 interface UrlInputProps {
-  onSubmit: (content: PodSource) => Promise<void>;
+  onSubmit: (title: string, source: PodSource) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -46,7 +46,7 @@ export function UrlInput({ onSubmit, isLoading }: UrlInputProps) {
       }
 
       const data = await response.json();
-      await onSubmit(data);
+      await onSubmit(data.title, data);
     } catch (err) {
       if (err instanceof TypeError && err.message.includes("URL")) {
         setError("请输入有效的 URL");

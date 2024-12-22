@@ -123,8 +123,7 @@ export function usePods() {
   }, [remotePods, setPods]);
 
   const handleCreatePod = useCallback(
-    async (title: string, source: PodSource) => {
-      const tempId = "temp-" + Date.now();
+    async (title: string, source?: PodSource) => {
       try {
         const response = await fetch(API_ENDPOINT, {
           method: "POST",

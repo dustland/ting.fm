@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { PodSource } from "@/store/pod";
 
 interface FileUploadProps {
-  onSubmit: (source: PodSource) => Promise<void>;
+  onSubmit: (title: string, source: PodSource) => Promise<void>;
   isLoading: boolean;
   onFileSelect?: (file: File) => void;
   accept?: Record<string, string[]>;
@@ -28,42 +28,42 @@ export function FileUpload({
   },
   maxSize = 5242880, // 5MB
 }: FileUploadProps) {
-  const [error, setError] = useState<string>("")
+  const [error, setError] = useState<string>("");
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
       if (acceptedFiles.length > 0) {
-        const file = acceptedFiles[0]
+        const file = acceptedFiles[0];
         if (file.size > maxSize) {
-          setError("文件太大，请上传小于 5MB 的文件")
-          return
+          setError("文件太大，请上传小于 5MB 的文件");
+          return;
         }
         try {
-          const text = await file.text()
-          await onSubmit({
+          const text = await file.text();
+          await onSubmit(file.name, {
             type: "file",
+            content: text,
             metadata: {
               title: file.name,
             },
-            content: text,
           });
         } catch (err) {
-          setError("读取文件失败，请重试")
+          setError("读取文件失败，请重试");
         }
         if (onFileSelect) {
-          onFileSelect(file)
+          onFileSelect(file);
         }
       }
     },
     [maxSize, onSubmit, onFileSelect]
-  )
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept,
     maxFiles: 1,
     multiple: false,
-  })
+  });
 
   return (
     <div
@@ -101,5 +101,5 @@ export function FileUpload({
         "开始创作"
       )}
     </div>
-  )
+  );
 }

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PodSource } from "@/store/pod";
 
 interface TextInputProps {
-  onSubmit: (content: PodSource) => Promise<void>;
+  onSubmit: (title: string, source: PodSource) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -28,7 +28,7 @@ export function TextInput({ onSubmit, isLoading }: TextInputProps) {
 
     try {
       setError("");
-      await onSubmit({
+      await onSubmit(text.slice(0, 20), {
         type: "text",
         metadata: {
           title: text.slice(0, 20),

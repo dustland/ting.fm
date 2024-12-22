@@ -62,7 +62,7 @@ const researchTopics: ResearchTopic[] = [
 ];
 
 interface PaperPodProps {
-  onSubmit: (content: PodSource) => Promise<void>;
+  onSubmit: (title: string, source: PodSource) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -106,7 +106,7 @@ export function PaperPod({ onSubmit, isLoading }: PaperPodProps) {
       const content = await arxiv.getPaperSource(selectedPaper.id);
       setIsFetching(false);
 
-      await onSubmit({
+      await onSubmit(selectedPaper.title, {
         type: "paper",
         content,
         metadata: {

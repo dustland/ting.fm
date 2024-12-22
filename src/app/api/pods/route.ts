@@ -48,17 +48,17 @@ export async function POST(req: Request) {
     }
 
     const pod = await req.json();
+    console.log("creating pod", pod);
 
     // Convert camelCase to snake_case and add timestamps
     const now = new Date().toISOString();
     const dbPod = {
       title: pod.title,
-      url: pod.url,
       source: pod.source,
       dialogues: pod.dialogues || [],
       created_at: now,
       updated_at: now,
-      status: pod.status,
+      status: pod.status || "draft",
       user_id: user.id,
     };
 
@@ -74,18 +74,20 @@ export async function POST(req: Request) {
     const formattedPod = {
       id: data.id,
       title: data.title,
-      url: data.url,
       source: data.source,
       dialogues: data.dialogues || [],
       createdAt: data.created_at,
       updatedAt: data.updated_at,
-      status: data.status,
+      status: data.status || "draft",
     };
 
     return NextResponse.json(formattedPod);
   } catch (error) {
     console.error("[PODS_POST]", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -93,7 +95,7 @@ export async function PUT(req: Request) {
   try {
     const supabase = await createClient();
     const user = await getUser();
-    
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -103,7 +105,6 @@ export async function PUT(req: Request) {
     // Convert camelCase to snake_case
     const dbUpdates = {
       ...(updates.title && { title: updates.title }),
-      ...(updates.url && { url: updates.url }),
       ...(updates.source && { source: updates.source }),
       ...(updates.dialogues && { dialogues: updates.dialogues }),
       ...(updates.status && { status: updates.status }),
@@ -124,7 +125,6 @@ export async function PUT(req: Request) {
     const formattedPod = {
       id: data.id,
       title: data.title,
-      url: data.url,
       source: data.source,
       dialogues: data.dialogues || [],
       createdAt: data.created_at,
@@ -135,7 +135,10 @@ export async function PUT(req: Request) {
     return NextResponse.json(formattedPod);
   } catch (error) {
     console.error("[PODS_PUT]", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 

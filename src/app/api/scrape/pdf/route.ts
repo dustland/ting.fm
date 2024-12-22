@@ -89,12 +89,21 @@ export async function POST(req: NextRequest) {
       version: "default"
     });
 
-    return new Response(JSON.stringify({ text: data.text }), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    return new Response(
+      JSON.stringify({
+        text: data.text
+          .replace(/\u0000/g, '') // Remove null characters
+          .split('\n')
+          .filter(line => line.trim())
+          .join('\n') 
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
   } catch (error) {
     console.error("Error processing PDF:", error);
     return new Response(

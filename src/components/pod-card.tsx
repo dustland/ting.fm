@@ -22,7 +22,7 @@ interface PodCardProps {
 }
 
 export function PodCard({ podId, className }: PodCardProps) {
-  const { pod, status, deletePod } = usePod(podId);
+  const { pod, deletePod, isDeleting } = usePod(podId);
 
   if (!pod) return null;
 
@@ -90,10 +90,14 @@ export function PodCard({ podId, className }: PodCardProps) {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => deletePod(pod.id)}
-            className="text-red-300 hover:text-red-500 shrink-0"
+            onClick={() => deletePod()}
+            className="text-muted-foreground hover:text-red-500 shrink-0"
           >
-            <Icons.trash className="h-4 w-4" />
+            {isDeleting ? (
+              <Icons.spinner className="h-4 w-4 animate-spin" />
+            ) : (
+              <Icons.trash className="h-4 w-4" />
+            )}
           </Button>
         </div>
         <CardDescription className="line-clamp-3 sm:line-clamp-4 mt-1.5 sm:mt-2 text-sm">
@@ -124,7 +128,11 @@ export function PodCard({ podId, className }: PodCardProps) {
           {getStatusIcon(pod.status)}
           <span>{getStatusText(pod.status)}</span>
         </Badge>
-        <Button variant="ghost" asChild className="text-sm">
+        <Button
+          variant="ghost"
+          asChild
+          className="text-muted-foreground text-xs sm:text-sm"
+        >
           <Link href={`/pods/${pod.id}`}>
             编辑
             <Icons.chevronRight className="ml-1.5 sm:ml-2 h-4 w-4" />

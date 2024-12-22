@@ -14,8 +14,6 @@ import { useSettingStore } from "@/store/setting";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import Image from "next/image";
-import { PaperInfo } from "@/components/paper-info";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -27,8 +25,7 @@ export default function PodPage({ params }: Props) {
   const { toast } = useToast();
   const [isGeneratingPodcast, setIsGeneratingPodcast] = useState(false);
   const { podcastSettings } = useSettingStore();
-  const { pod, status, updatePod } = usePod(id);
-  const { updateDialogue } = usePodStore();
+  const { pod, isLoading, isUpdating, updatePod, updateDialogue } = usePod(id);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { append } = usePodChat({
     podId: id,
@@ -44,7 +41,7 @@ export default function PodPage({ params }: Props) {
   });
 
   useEffect(() => {
-    if (!pod && !status.isLoading) {
+    if (!pod && !isLoading) {
       toast({
         title: "播客不存在",
         description: "正在返回播客列表",
@@ -52,7 +49,7 @@ export default function PodPage({ params }: Props) {
       });
       router.push("/pods");
     }
-  }, [pod, router, status.isLoading, toast]);
+  }, [pod, router, isLoading, toast]);
 
   if (!pod) {
     return (
@@ -112,7 +109,12 @@ export default function PodPage({ params }: Props) {
         const data = await response.json();
 
         // Update dialogue with audio URL
-        await updateDialogue(id, dialogue.id, dialogue.content, dialogue.host);
+        await updatePod({
+          ...pod,
+          dialogues: pod.dialogues.map((d) =>
+            d.id === dialogue.id ? { ...d, audioUrl: data.url } : d
+          ),
+        });
         return {
           url: data.url,
           dialogueId: dialogue.id,
@@ -126,7 +128,7 @@ export default function PodPage({ params }: Props) {
       for (const { url, dialogueId } of audioResults) {
         const dialogue = pod.dialogues.find((d) => d.id === dialogueId);
         if (dialogue) {
-          await updateDialogue(id, dialogueId, dialogue.content, dialogue.host);
+          await updateDialogue(dialogue);
         }
       }
 
@@ -150,7 +152,11 @@ export default function PodPage({ params }: Props) {
       const dialogue = pod?.dialogues?.find((d) => d.id === dialogueId);
       if (!dialogue) throw new Error("对话不存在");
 
-      updateDialogue(id, dialogueId, content, dialogue.host);
+      await updateDialogue({ ...dialogue, content });
+      toast({
+        title: "成功",
+        description: "对话已更新",
+      });
     } catch (error) {
       toast({
         title: "错误",
@@ -327,34 +333,49 @@ export default function PodPage({ params }: Props) {
                           {/* Metadata Section */}
                           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                             {/* Type Badge */}
-                            {pod.source.type === "paper" && pod.source.metadata?.categories && pod.source.metadata.categories[0] && (
-                              <div className="flex items-center gap-1">
-                                <Icons.arxiv className="h-4 w-4" />
-                                <span>{pod.source.metadata.categories[0]}</span>
-                              </div>
-                            )}
+                            {pod.source.type === "paper" &&
+                              pod.source.metadata?.categories &&
+                              pod.source.metadata.categories[0] && (
+                                <div className="flex items-center gap-1">
+                                  <Icons.arxiv className="h-4 w-4" />
+                                  <span>
+                                    {pod.source.metadata.categories[0]}
+                                  </span>
+                                </div>
+                              )}
 
                             {/* Authors */}
-                            {pod.source.metadata?.authors && pod.source.metadata.authors.length > 0 && (
-                              <div className="flex items-center gap-1">
-                                <Icons.users className="h-4 w-4" />
-                                <span>{pod.source.metadata.authors.join(", ")}</span>
-                              </div>
-                            )}
-                            
+                            {pod.source.metadata?.authors &&
+                              pod.source.metadata.authors.length > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <Icons.users className="h-4 w-4" />
+                                  <span>
+                                    {pod.source.metadata.authors.join(", ")}
+                                  </span>
+                                </div>
+                              )}
+
                             {/* Categories */}
-                            {pod.source.metadata?.categories && pod.source.metadata.categories.length > 0 && (
-                              <div className="flex items-center gap-1">
-                                <Icons.tag className="h-4 w-4" />
-                                <span>{pod.source.metadata.categories.join(", ")}</span>
-                              </div>
-                            )}
+                            {pod.source.metadata?.categories &&
+                              pod.source.metadata.categories.length > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <Icons.tag className="h-4 w-4" />
+                                  <span>
+                                    {pod.source.metadata.categories.join(", ")}
+                                  </span>
+                                </div>
+                              )}
 
                             {/* Dates */}
                             {pod.source.metadata?.createdAt && (
                               <div className="flex items-center gap-1">
                                 <Icons.calendar className="h-4 w-4" />
-                                <span>发布于 {new Date(pod.source.metadata.createdAt).toLocaleDateString("zh-CN")}</span>
+                                <span>
+                                  发布于{" "}
+                                  {new Date(
+                                    pod.source.metadata.createdAt
+                                  ).toLocaleDateString("zh-CN")}
+                                </span>
                               </div>
                             )}
 
@@ -392,19 +413,28 @@ export default function PodPage({ params }: Props) {
                           <div className="space-y-6">
                             {pod.source.metadata.summary && (
                               <div className="mt-4">
-                                <h3 className="font-medium text-sm mb-2">摘要</h3>
-                                <p className="text-sm text-muted-foreground">{pod.source.metadata.summary}</p>
+                                <h3 className="font-medium text-sm mb-2">
+                                  摘要
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {pod.source.metadata.summary}
+                                </p>
                               </div>
                             )}
                           </div>
                         )}
                         {pod.source.type !== "paper" && pod.source.content && (
                           <div className="space-y-4">
-                            {pod.source.content.split("\n").map((paragraph, index) => (
-                              <p key={index} className="text-sm text-muted-foreground">
-                                {paragraph}
-                              </p>
-                            ))}
+                            {pod.source.content
+                              .split("\n")
+                              .map((paragraph, index) => (
+                                <p
+                                  key={index}
+                                  className="text-sm text-muted-foreground"
+                                >
+                                  {paragraph}
+                                </p>
+                              ))}
                           </div>
                         )}
                       </div>

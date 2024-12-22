@@ -28,12 +28,14 @@ export default function PodsPage() {
             <p className="text-muted-foreground">管理您的所有播客</p>
           </div>
           {podsList.length > 0 && (
-            <CreatePodDialog>
-              <Button>
-                <Icons.plus className="mr-2 h-4 w-4" />
-                新建播客
-              </Button>
-            </CreatePodDialog>
+            <CreatePodDialog
+              trigger={
+                <Button>
+                  <Icons.plus className="mr-2 h-4 w-4" />
+                  新建播客
+                </Button>
+              }
+            />
           )}
         </div>
       </div>

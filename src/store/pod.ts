@@ -56,6 +56,7 @@ export interface Pod {
 interface PodState {
   pods: Record<string, Pod>;
   operationStatus: Record<string, PodOperationStatus>;
+  setPods: (pods: Pod[]) => void;
   addPod: (pod: Pod) => void;
   updatePod: (id: string, updates: Partial<Pod>) => void;
   deletePod: (id: string) => void;
@@ -83,6 +84,11 @@ export const usePodStore = create<PodState>()(
     (set, get) => ({
       pods: {},
       operationStatus: {},
+
+      setPods: (pods) =>
+        set(() => ({
+          pods: pods.reduce((acc, pod) => ({ ...acc, [pod.id]: pod }), {}),
+        })),
 
       addPod: (pod) =>
         set((state) => ({
@@ -118,8 +124,9 @@ export const usePodStore = create<PodState>()(
 
       deletePod: (id) =>
         set((state) => {
-          const { [id]: _, ...rest } = state.pods;
-          return { pods: rest };
+          const newPods = { ...state.pods };
+          delete newPods[id];
+          return { pods: newPods };
         }),
 
       getPod: (id) => get().pods[id],

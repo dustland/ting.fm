@@ -12,7 +12,7 @@ interface UsePodChatOptions {
 }
 
 export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
-  const { updatePod } = usePod(podId);
+  const { pod, updatePod } = usePod(podId);
   const { toast } = useToast();
   const chat = useVercelChat({
     api: "/api/chat",
@@ -39,6 +39,7 @@ export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
         dialogues,
       });
       updatePod({
+        ...pod,
         dialogues,
         status: "ready",
       });
@@ -90,6 +91,7 @@ export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
           dialogues,
         });
         updatePod({
+          ...pod,
           dialogues,
           status: "ready",
         });

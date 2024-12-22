@@ -10,7 +10,6 @@ import { usePods } from "@/hooks/use-pods";
 import { UrlInput } from "./input-methods/url-input";
 import { FileUpload } from "./input-methods/file-upload";
 import { TextInput } from "./input-methods/text-input";
-import { ChannelSelect } from "./input-methods/channel-select";
 import { PaperPod } from "./input-methods/paper-pod";
 import { cn } from "@/lib/utils";
 import { PodSource } from "@/store/pod";
@@ -58,8 +57,16 @@ export function CreatePodCard({ onCreated, className }: CreatePodCardProps) {
         开始创建属于你的播客
       </CardTitle>
       <CardContent className="p-4">
-        <Tabs defaultValue="url" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-4">
+        <Tabs defaultValue="paper" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsTrigger value="paper" className="flex items-center gap-2">
+              <Icons.graduationCap className="h-4 w-4" />
+              <span className="hidden sm:inline-block">arXiv</span>
+            </TabsTrigger>
+            <TabsTrigger value="text" className="flex items-center gap-2">
+              <Icons.edit className="h-4 w-4" />
+              <span className="hidden sm:inline-block">文本</span>
+            </TabsTrigger>
             <TabsTrigger value="url" className="flex items-center gap-2">
               <Icons.link className="h-4 w-4" />
               <span className="hidden sm:inline-block">链接</span>
@@ -67,18 +74,6 @@ export function CreatePodCard({ onCreated, className }: CreatePodCardProps) {
             <TabsTrigger value="file" className="flex items-center gap-2">
               <Icons.fileText className="h-4 w-4" />
               <span className="hidden sm:inline-block">文件</span>
-            </TabsTrigger>
-            <TabsTrigger value="text" className="flex items-center gap-2">
-              <Icons.edit className="h-4 w-4" />
-              <span className="hidden sm:inline-block">文本</span>
-            </TabsTrigger>
-            <TabsTrigger value="channel" className="flex items-center gap-2">
-              <Icons.radio className="h-4 w-4" />
-              <span className="hidden sm:inline-block">频道</span>
-            </TabsTrigger>
-            <TabsTrigger value="paper" className="flex items-center gap-2">
-              <Icons.fileText className="h-4 w-4" />
-              <span className="hidden sm:inline-block">论文</span>
             </TabsTrigger>
           </TabsList>
           <div className="mt-4 space-y-4">
@@ -90,9 +85,6 @@ export function CreatePodCard({ onCreated, className }: CreatePodCardProps) {
             </TabsContent>
             <TabsContent value="text">
               <TextInput onSubmit={handleCreate} isLoading={isCreating} />
-            </TabsContent>
-            <TabsContent value="channel">
-              <ChannelSelect onSubmit={handleCreate} isLoading={isCreating} />
             </TabsContent>
             <TabsContent value="paper">
               <PaperPod onSubmit={handleCreate} isLoading={isCreating} />

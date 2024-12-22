@@ -14,43 +14,49 @@ import { Input } from "@/components/ui/input";
 import { PodSource } from "@/store/pod";
 
 interface ResearchTopic {
-  id: string;
-  name: string;
+  value: string;
+  label: string;
   description: string;
   keywords: string;
 }
 
 const researchTopics: ResearchTopic[] = [
   {
-    id: "ai-ml",
-    name: "AI & 机器学习",
+    value: "psychology",
+    label: "心理学",
+    description: "心理学、认知科学和行为研究",
+    keywords: "psychology,cognitive science,behavioral science",
+  },
+  {
+    value: "ai-ml",
+    label: "AI & 机器学习",
     description: "人工智能和机器学习领域的最新研究论文",
     keywords:
       "artificial intelligence,machine learning,deep learning,neural networks",
   },
   {
-    id: "robotics",
-    name: "机器人与自动化",
+    value: "robotics",
+    label: "机器人与自动化",
     description: "机器人技术、自动化系统和控制理论研究",
-    keywords: "robotics,automation,control systems,autonomous systems",
+    keywords: "robotics,automation,control systems,mechatronics",
   },
   {
-    id: "cognitive-science",
-    name: "认知科学",
+    value: "cognitive-science",
+    label: "认知科学",
     description: "认知科学、神经科学和心理学研究",
-    keywords: "cognitive science,neuroscience,psychology,mental health",
+    keywords: "cognitive science,neuroscience,psychology",
   },
   {
-    id: "quantum-computing",
-    name: "量子计算",
+    value: "quantum-computing",
+    label: "量子计算",
     description: "量子计算和量子信息科学研究",
-    keywords: "quantum computing,quantum information,quantum algorithms",
+    keywords: "quantum computing,quantum information,quantum mechanics",
   },
   {
-    id: "climate-science",
-    name: "气候科学",
-    description: "气候变化、环境科学和可持续发展研究",
-    keywords: "climate change,environmental science,sustainability",
+    value: "other",
+    label: "其他",
+    description: "其他领域的最新研究论文",
+    keywords: "",
   },
 ];
 
@@ -66,19 +72,16 @@ export function PaperPod({ onSubmit, isLoading }: PaperPodProps) {
   const handleSubmit = async () => {
     if (!selectedTopic) return;
 
-    const topic = researchTopics.find((t) => t.id === selectedTopic);
+    const topic = researchTopics.find((t) => t.value === selectedTopic);
     if (!topic) return;
 
-    const keywords = customKeywords
-      ? `${topic.keywords},${customKeywords}`
-      : topic.keywords;
-
+    const keywords = customKeywords || topic.keywords;
     await onSubmit({
       type: "text",
       content: JSON.stringify({
-        topicId: topic.id,
+        topicId: topic.value,
         keywords: keywords,
-        name: topic.name,
+        name: topic.label,
         description: topic.description,
       }),
     });
@@ -86,23 +89,33 @@ export function PaperPod({ onSubmit, isLoading }: PaperPodProps) {
 
   return (
     <div className="grid w-full gap-4">
-      <div className="flex items-center gap-2">
-        <Icons.graduationCap className="h-5 w-5" />
-        <span className="text-lg font-semibold">PaperPod</span>
-      </div>
       <p className="text-sm text-muted-foreground">
         从 arXiv 获取最新研究论文并生成播客
       </p>
       <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-        <SelectTrigger>
-          <SelectValue placeholder="选择研究领域" />
+        <SelectTrigger className="h-20 text-left">
+          <SelectValue placeholder="选择研究领域">
+            {selectedTopic && (
+              <div className="flex flex-col">
+                <div className="font-medium">
+                  {researchTopics.find((t) => t.value === selectedTopic)?.label}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {
+                    researchTopics.find((t) => t.value === selectedTopic)
+                      ?.description
+                  }
+                </div>
+              </div>
+            )}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {researchTopics.map((topic) => (
-            <SelectItem key={topic.id} value={topic.id}>
-              <div className="flex flex-col gap-1">
-                <div>{topic.name}</div>
-                <div className="text-xs text-muted-foreground">
+            <SelectItem key={topic.value} value={topic.value} className="py-3">
+              <div>
+                <div className="font-medium">{topic.label}</div>
+                <div className="text-sm text-muted-foreground">
                   {topic.description}
                 </div>
               </div>

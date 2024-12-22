@@ -20,6 +20,7 @@ export function usePod(podId: string) {
     updateSource: handleUpdateSource,
     deletePod: handleDeletePod,
     publishPod: handlePublishPod,
+    isLoading: isPodsLoading,
   } = usePods();
   const pod = pods[podId];
 
@@ -60,15 +61,6 @@ export function usePod(podId: string) {
     [handleUpdatePod, podId, startOperation, endOperation]
   );
 
-  const wrappedPublishPod = useCallback(async () => {
-    try {
-      startOperation("publish");
-      await handlePublishPod(podId);
-    } finally {
-      endOperation();
-    }
-  }, [handlePublishPod, podId, startOperation, endOperation]);
-
   const wrappedUpdateSource = useCallback(
     async (data: PodSource) => {
       try {
@@ -80,6 +72,15 @@ export function usePod(podId: string) {
     },
     [handleUpdateSource, podId, startOperation, endOperation]
   );
+
+  const wrappedPublishPod = useCallback(async () => {
+    try {
+      startOperation("publish");
+      await handlePublishPod(podId);
+    } finally {
+      endOperation();
+    }
+  }, [handlePublishPod, podId, startOperation, endOperation]);
 
   const handleUpdateDialogue = useCallback(
     async (dialogue: Dialogue) => {
@@ -105,7 +106,7 @@ export function usePod(podId: string) {
 
   return {
     pod,
-    isLoading: status.isLoading,
+    isLoading: isPodsLoading || status.isLoading,
     isDeleting: status.isLoading && status.operation === "delete",
     isPublishing: status.isLoading && status.operation === "publish",
     isUpdating: status.isLoading && status.operation === "update",

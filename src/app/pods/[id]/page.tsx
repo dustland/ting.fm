@@ -43,8 +43,9 @@ export default function PodPage({ params }: Props) {
     },
   });
 
+  // Only redirect if pod is not found after loading is complete
   useEffect(() => {
-    if (!pod && !isLoading) {
+    if (!isLoading && !isUpdating && !pod) {
       toast({
         title: "播客不存在",
         description: "正在返回播客列表",
@@ -52,7 +53,7 @@ export default function PodPage({ params }: Props) {
       });
       router.push("/pods");
     }
-  }, [pod, router, isLoading, toast]);
+  }, [pod, router, isLoading, isUpdating, toast]);
 
   useEffect(() => {
     if (dialoguesEndRef.current) {
@@ -60,7 +61,8 @@ export default function PodPage({ params }: Props) {
     }
   }, [dialogues?.length]);
 
-  if (!pod) {
+  // Show loading state while loading or updating
+  if (isLoading || isUpdating || !pod) {
     return (
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
         <Icons.spinner className="h-8 w-8 animate-spin" />

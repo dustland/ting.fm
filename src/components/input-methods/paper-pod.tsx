@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -10,8 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { PodSource } from "@/store/pod";
+import { ArxivService, type ArxivPaper } from "@/lib/arxiv";
 
 interface ResearchTopic {
   value: string;
@@ -68,22 +69,48 @@ interface PaperPodProps {
 export function PaperPod({ onSubmit, isLoading }: PaperPodProps) {
   const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [customKeywords, setCustomKeywords] = useState<string>("");
+  const [papers, setPapers] = useState<ArxivPaper[]>([]);
+  const [selectedPaper, setSelectedPaper] = useState<ArxivPaper | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const handleSubmit = async () => {
+  const handleSearch = async () => {
     if (!selectedTopic) return;
 
     const topic = researchTopics.find((t) => t.value === selectedTopic);
     if (!topic) return;
 
-    const keywords = customKeywords || topic.keywords;
+    try {
+      setIsSearching(true);
+      const arxiv = new ArxivService();
+      const keywords = customKeywords || topic.keywords;
+      const results = await arxiv.searchPapers(keywords, 5);
+      setPapers(results);
+      if (results.length > 0) {
+        setSelectedPaper(results[0]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch papers:", error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedPaper) return;
+
     await onSubmit({
-      type: "text",
+      type: "paper",
       content: JSON.stringify({
-        topicId: topic.value,
-        keywords: keywords,
-        name: topic.label,
-        description: topic.description,
+        paper: selectedPaper,
+        topicId: selectedTopic,
       }),
+      metadata: {
+        title: selectedPaper.title,
+        description: selectedPaper.summary,
+        author: selectedPaper.authors.join(", "),
+        publishDate: selectedPaper.published,
+        url: selectedPaper.link,
+      },
     });
   };
 
@@ -123,14 +150,105 @@ export function PaperPod({ onSubmit, isLoading }: PaperPodProps) {
           ))}
         </SelectContent>
       </Select>
-      <Input
-        placeholder="添加自定义关键词（可选，用逗号分隔）"
-        value={customKeywords}
-        onChange={(e) => setCustomKeywords(e.target.value)}
-      />
+
+      {selectedTopic && (
+        <>
+          <Input
+            placeholder="添加自定义关键词（可选，用逗号分隔）"
+            value={customKeywords}
+            onChange={(e) => setCustomKeywords(e.target.value)}
+          />
+
+          <Button
+            variant="secondary"
+            className="w-full"
+            onClick={handleSearch}
+            disabled={isSearching}
+          >
+            {isSearching ? (
+              <>
+                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                搜索论文中...
+              </>
+            ) : (
+              <>
+                <Icons.search className="mr-2 h-4 w-4" />
+                搜索相关论文
+              </>
+            )}
+          </Button>
+        </>
+      )}
+
+      {papers.length > 0 && (
+        <div className="space-y-4">
+          <div className="text-sm font-medium">找到以下相关论文：</div>
+          <Select
+            value={selectedPaper?.id}
+            onValueChange={(id) =>
+              setSelectedPaper(papers.find((p) => p.id === id) || null)
+            }
+          >
+            <SelectTrigger className="h-auto text-left py-2">
+              <SelectValue placeholder="选择要转换的论文">
+                {selectedPaper && (
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <div className="font-medium line-clamp-2 break-words">
+                      {selectedPaper.title}
+                    </div>
+                    <div className="text-sm text-muted-foreground break-words">
+                      作者：{selectedPaper.authors.slice(0, 3).join(", ")}
+                      {selectedPaper.authors.length > 3 &&
+                        ` 等${selectedPaper.authors.length}位作者`}
+                    </div>
+                  </div>
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-full">
+              {papers.map((paper) => (
+                <SelectItem
+                  key={paper.id}
+                  value={paper.id}
+                  className="py-3"
+                >
+                  <div className="flex flex-col gap-1 min-w-0 max-w-full">
+                    <div className="font-medium line-clamp-2 break-words">
+                      {paper.title}
+                    </div>
+                    <div className="text-sm text-muted-foreground break-words">
+                      作者：{paper.authors.slice(0, 3).join(", ")}
+                      {paper.authors.length > 3 &&
+                        ` 等${paper.authors.length}位作者`}
+                    </div>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {selectedPaper && (
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground line-clamp-4 break-words">
+                {selectedPaper.summary}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <div>
+                  发布于：
+                  {new Date(selectedPaper.published).toLocaleDateString()}
+                </div>
+                <div className="mt-1">
+                  作者：{selectedPaper.authors.join("、")}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <Button
         onClick={handleSubmit}
-        disabled={!selectedTopic || isLoading}
+        disabled={isLoading || !selectedPaper}
         className="w-full"
       >
         {isLoading ? (
@@ -140,7 +258,7 @@ export function PaperPod({ onSubmit, isLoading }: PaperPodProps) {
           </>
         ) : (
           <>
-            <Icons.sparkles className="mr-2 h-4 w-4" />
+            <Icons.graduationCap className="mr-2 h-4 w-4" />
             生成科研播客
           </>
         )}

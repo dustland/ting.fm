@@ -9,6 +9,7 @@ export interface CrawlRequest {
 }
 
 export interface CrawlResponse {
+  title: string;
   metadata: {
     title: string;
     description: string;
@@ -164,10 +165,12 @@ export async function POST(req: NextRequest) {
     // Calculate word count and reading time
     const wordCount = countWords(article.textContent);
     const readingTime = estimateReadingTime(wordCount);
+    const title = article.title || metadata.title || "未知标题";
 
     const response: CrawlResponse = {
+      title,
       metadata: {
-        title: article.title || metadata.title || "未知标题",
+        title,
         description: article.excerpt || metadata.description || "无描述",
         author: metadata.author
           ? Array.isArray(metadata.author)
@@ -191,10 +194,10 @@ export async function POST(req: NextRequest) {
         wordCount,
       },
       content: article.textContent
-        .replace(/\u0000/g, '') // Remove null characters
-        .split('\n')
-        .filter(line => line.trim())
-        .join('\n'),
+        .replace(/\u0000/g, "") // Remove null characters
+        .split("\n")
+        .filter((line) => line.trim())
+        .join("\n"),
     };
 
     return Response.json(response);

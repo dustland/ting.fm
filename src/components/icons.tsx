@@ -51,6 +51,8 @@ import {
   Info,
   Monitor,
   LucideProps,
+  LetterText,
+  FileUp,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -81,14 +83,12 @@ export function google({ ...props }: any) {
 
 export function arxiv({ ...props }: any) {
   return (
-    <svg
-      {...props}
-      viewBox="0 0 135.611 201"
-      fill="currentColor"
-      stroke="none"
-    >
+    <svg {...props} viewBox="0 0 135.611 201" fill="currentColor" stroke="none">
       <g>
-        <path d="M456.756,249.1l-42.324,49.375c-1.885,2.01-3.054,5.535-2,8.066a6.9,6.9,0,0,0,6.443,4.27c1.6,0,2.911-.56,4.631-2.289l52.364-54.278a8.927,8.927,0,0,0,.061-12.584Z" transform="translate(-391.029 -166.577)" />
+        <path
+          d="M456.756,249.1l-42.324,49.375c-1.885,2.01-3.054,5.535-2,8.066a6.9,6.9,0,0,0,6.443,4.27c1.6,0,2.911-.56,4.631-2.289l52.364-54.278a8.927,8.927,0,0,0,.061-12.584Z"
+          transform="translate(-391.029 -166.577)"
+        />
         <path d="M455.876,248.071l39.168-49.545c2.186-2.914,3.219-4.44,2.186-6.921a7.536,7.536,0,0,0-6.566-4.633h0a5.9,5.9,0,0,0-4.408,1.624l-50.072,53.061c-3.816,3.816-3.808,8.753.023,12.584l70.031,73.438a5.738,5.738,0,0,0,4.6,1.748c2.833,0,4.67-1.667,5.9-4.131,1.054-2.531-.112-5.038-2.056-7.664l-58.8-69.561" />
         <path d="M475.931,241.657l-68.388-71.966s-2.511-3.048-5.165-3.112a6.75,6.75,0,0,0-6.357,4.084c-1.033,2.481-.291,4.223,1.977,7.47L456.756,249.1Z" />
       </g>
@@ -103,7 +103,9 @@ export const Icons = {
   discover: Compass,
   upload: Upload,
   link: Link,
-  text: FileText,
+  globe: Globe,
+  fileup: FileUp,
+  text: LetterText,
   channel: Radio,
   podcast: Headphones,
   play: Play,
@@ -125,7 +127,6 @@ export const Icons = {
   plus: Plus,
   trash: Trash2,
   save: Save,
-  globe: Globe,
   bot: Bot,
   speaker: Speaker,
   users: Users,

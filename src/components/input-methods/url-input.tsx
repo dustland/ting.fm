@@ -13,7 +13,9 @@ interface UrlInputProps {
 }
 
 export function UrlInput({ onSubmit, isLoading }: UrlInputProps) {
-  const [url, setUrl] = useState("https://news.qq.com/rain/a/20241221A01AVK00");
+  const [url, setUrl] = useState(
+    "https://www.bbc.com/news/articles/cp319jx719po"
+  );
   const [error, setError] = useState("");
   const [isCrawling, setIsCrawling] = useState(false);
 

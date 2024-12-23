@@ -19,8 +19,6 @@ export async function GET() {
 
     if (error) throw error;
 
-    console.log("pods", pods);
-
     // Convert snake_case to camelCase
     const formattedPods = pods?.map((pod) => ({
       id: pod.id,

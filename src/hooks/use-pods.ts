@@ -128,8 +128,6 @@ export function usePods() {
     isLoading: isLoadingRemote,
   } = useSWR(API_ENDPOINT, fetcher);
 
-  console.log("usePods:pods", pods, remotePods);
-
   // Only update pods from remote if there are actual changes
   useEffect(() => {
     if (!remotePods || !Array.isArray(remotePods)) return;

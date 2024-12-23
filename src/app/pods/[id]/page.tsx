@@ -229,7 +229,7 @@ export default function PodPage({ params }: Props) {
   };
 
   return (
-    <div className="h-[calc(100vh-var(--navbar-height))] container flex flex-col py-2">
+    <div className="h-[calc(100vh-var(--navbar-height))] container flex flex-col p-2">
       <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col min-h-0">
         <div className="flex-none">
           <div className="flex items-center justify-between">
@@ -251,7 +251,7 @@ export default function PodPage({ params }: Props) {
                   {pod.source.metadata?.wordCount && (
                     <Badge
                       variant="secondary"
-                      className="flex items-center space-x-2"
+                      className="hidden md:flex items-center space-x-2"
                     >
                       <Icons.documentText className="h-4 w-4" />
                       <span>{pod.source.metadata.wordCount} 字</span>
@@ -260,7 +260,7 @@ export default function PodPage({ params }: Props) {
                   {pod.source.metadata?.readingTime && (
                     <Badge
                       variant="secondary"
-                      className="flex items-center space-x-2"
+                      className="hidden md:flex items-center space-x-2"
                     >
                       <Icons.clock className="h-4 w-4" />
                       <span>{pod.source.metadata.readingTime} 分钟</span>
@@ -311,11 +311,7 @@ export default function PodPage({ params }: Props) {
                             src={pod.audioUrl}
                             className="h-8 max-w-[300px]"
                           />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            asChild
-                          >
+                          <Button variant="ghost" size="icon" asChild>
                             <a
                               href={pod.audioUrl}
                               target="_blank"
@@ -337,15 +333,21 @@ export default function PodPage({ params }: Props) {
 
         <Tabs
           defaultValue="source"
-          className="flex-1 flex flex-col min-h-0 mt-6"
+          className="flex-1 flex flex-col min-h-0 mt-3 sm:mt-6"
         >
           <TabsList className="flex-none grid w-full grid-cols-2">
-            <TabsTrigger value="source" className="flex items-center gap-2">
-              <Icons.text className="h-4 w-4" />
+            <TabsTrigger
+              value="source"
+              className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
+            >
+              <Icons.text className="h-3 w-3 sm:h-4 sm:w-4" />
               原文内容
             </TabsTrigger>
-            <TabsTrigger value="dialogues" className="flex items-center gap-2">
-              <Icons.podcast className="h-4 w-4" />
+            <TabsTrigger
+              value="dialogues"
+              className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
+            >
+              <Icons.podcast className="h-3 w-3 sm:h-4 sm:w-4" />
               播客剧本
             </TabsTrigger>
           </TabsList>
@@ -401,17 +403,17 @@ export default function PodPage({ params }: Props) {
               <CardContent className="p-0 h-full">
                 <ScrollArea className="h-full">
                   {pod?.source ? (
-                    <div className="p-6">
+                    <div className="p-2 sm:p-6">
                       {/* Header Section */}
                       {pod.source && (
-                        <div className="flex flex-col space-y-4 pb-6 border-b">
+                        <div className="flex flex-col space-y-2 sm:space-y-4 pb-3 sm:pb-6 border-b">
                           {/* Title and External Link */}
-                          <h1 className="text-xl font-semibold tracking-tight">
+                          <h1 className="text-lg sm:text-xl font-semibold tracking-tight">
                             {pod.source.metadata?.title || pod.title}
                           </h1>
 
                           {/* Metadata Section */}
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                             {/* Type Badge */}
                             {pod.source.type === "paper" &&
                               pod.source.metadata?.categories &&
@@ -482,12 +484,12 @@ export default function PodPage({ params }: Props) {
                       )}
 
                       {/* Content Section */}
-                      <div className="mt-6">
+                      <div className="mt-3 sm:mt-6">
                         {pod.source.type === "paper" && pod.source.metadata && (
-                          <div className="space-y-6">
+                          <div className="space-y-3 sm:space-y-6">
                             {pod.source.metadata.summary && (
-                              <div className="mt-4">
-                                <h3 className="font-medium text-sm mb-2">
+                              <div className="mt-2 sm:mt-4">
+                                <h3 className="font-medium text-sm mb-1 sm:mb-2">
                                   摘要
                                 </h3>
                                 <p className="text-sm text-muted-foreground">

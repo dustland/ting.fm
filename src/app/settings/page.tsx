@@ -87,7 +87,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="container py-10">
+    <div className="container p-2">
       <div className="flex flex-col space-y-8 max-w-4xl mx-auto">
         <div>
           <h1 className="text-3xl font-bold">设置</h1>
@@ -211,7 +211,9 @@ export default function SettingsPage() {
                   <Label>名字</Label>
                   <Input
                     value={character.name}
-                    onChange={(e) => updateCharacter(index, "name", e.target.value)}
+                    onChange={(e) =>
+                      updateCharacter(index, "name", e.target.value)
+                    }
                     placeholder="角色名字"
                   />
                 </div>
@@ -219,7 +221,9 @@ export default function SettingsPage() {
                   <Label>头衔</Label>
                   <Input
                     value={character.title}
-                    onChange={(e) => updateCharacter(index, "title", e.target.value)}
+                    onChange={(e) =>
+                      updateCharacter(index, "title", e.target.value)
+                    }
                     placeholder="角色头衔"
                   />
                 </div>

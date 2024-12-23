@@ -66,12 +66,12 @@ export default function DiscoverPage() {
   }
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="container mx-auto p-2">
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold">发现播客</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-lg lg:text-3xl font-bold">发现播客</h1>
+            <p className="hidden lg:block text-sm text-muted-foreground">
               探索由 AI 生成的精彩播客内容
             </p>
           </div>
@@ -138,5 +138,5 @@ export default function DiscoverPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

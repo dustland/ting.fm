@@ -87,9 +87,9 @@ export function PodCard({ podId, className }: PodCardProps) {
   };
 
   return (
-    <Card className={cn("flex flex-col p-1 sm:p-2 h-full", className)}>
-      <CardHeader className="p-1.5 sm:p-2">
-        <div className="flex items-center space-x-2 border-b pb-1.5 sm:pb-2">
+    <Card className={cn("flex flex-col p-2 lg:p-4  h-full", className)}>
+      <CardHeader className="p-1 sm:p-2">
+        <div className="flex items-center space-x-1.5 sm:space-x-2 border-b pb-1 sm:pb-2">
           {pod.source?.metadata?.favicon ? (
             <Image
               src={pod.source.metadata.favicon}

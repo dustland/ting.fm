@@ -20,7 +20,7 @@ export default function PodsPage() {
   }, [pods]);
 
   return (
-    <div className="container px-2 sm:px-4 py-4 sm:py-8">
+    <div className="container p-2">
       <div className="mb-4 sm:mb-8">
         <div className="flex items-center justify-between">
           <div>

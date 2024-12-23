@@ -4,7 +4,7 @@ import { CreatePodCard } from "@/components/create-pod-card";
 
 export default function Home() {
   return (
-    <main className="min-h-[calc(100vh-4rem)] flex flex-col items-center p-4 md:p-12 lg:p-20">
+    <main className="min-h-[calc(100vh-4rem)] flex flex-col items-center p-2">
       <div className="w-full max-w-3xl mx-auto space-y-8">
         {/* Hero Section */}
         <div className="text-center space-y-4 my-12">

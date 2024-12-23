@@ -102,7 +102,9 @@ export function PodCard({ podId, className }: PodCardProps) {
             <Icons.podcast className="h-4 w-4 shrink-0" />
           )}
           <CardTitle className="flex items-center justify-between">
-            <span className="truncate">{pod.title}</span>
+            <span className="flex-1 text-sm sm:text-base font-semibold line-clamp-1">
+              {pod.title}
+            </span>
             <div className="flex items-center gap-2">
               {pod.audioUrl && (
                 <Badge variant="secondary" className="flex items-center gap-1">

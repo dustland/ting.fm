@@ -5,6 +5,7 @@ import { useDropzone } from "react-dropzone"
 import { Icons } from "@/components/icons"
 import { cn } from "@/lib/utils"
 import { PodSource } from "@/store/pod";
+import { toast } from "@/hooks/use-toast";
 
 interface FileUploadProps {
   onSubmit: (title: string, source: PodSource) => Promise<void>;
@@ -29,30 +30,142 @@ export function FileUpload({
   maxSize = 5242880, // 5MB
 }: FileUploadProps) {
   const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setLoading(true);
+      let text = "";
+
+      // Handle different file types
+      if (file.type === "application/pdf") {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/api/extract-pdf", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to extract PDF text");
+        }
+
+        const data = await response.json();
+        text = data.text;
+      } else if (
+        file.type === "application/msword" ||
+        file.type ===
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/api/extract-doc", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to extract DOC text");
+        }
+
+        const data = await response.json();
+        text = data.text;
+      } else {
+        // For txt and other text-based files
+        text = await file.text();
+      }
+
+      await onSubmit(file.name.slice(0, 20), {
+        type: "file",
+        content: text,
+        metadata: {
+          title: file.name,
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+        }
+      });
+    } catch (error) {
+      toast({
+        title: "错误",
+        description: "文件上传失败，请重试",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
-      if (acceptedFiles.length > 0) {
-        const file = acceptedFiles[0];
-        if (file.size > maxSize) {
-          setError("文件太大，请上传小于 5MB 的文件");
-          return;
-        }
-        try {
-          const text = await file.text();
-          await onSubmit(file.name, {
-            type: "file",
-            content: text,
-            metadata: {
-              title: file.name,
-            },
+      const file = acceptedFiles[0];
+      if (file.size > maxSize) {
+        setError("文件太大，请上传小于 5MB 的文件");
+        return;
+      }
+
+      try {
+        let content = '';
+
+        // Handle different file types
+        if (file.type === 'application/pdf') {
+          const formData = new FormData();
+          formData.append('file', file);
+          
+          const response = await fetch('/api/extract-pdf', {
+            method: 'POST',
+            body: formData,
           });
-        } catch (err) {
-          setError("读取文件失败，请重试");
+          
+          if (!response.ok) {
+            throw new Error('Failed to extract PDF text');
+          }
+          
+          const data = await response.json();
+          content = data.text;
+        } else if (file.type === 'application/msword' || 
+                  file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+          const formData = new FormData();
+          formData.append('file', file);
+          
+          const response = await fetch('/api/extract-doc', {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to extract DOC text');
+          }
+          
+          const data = await response.json();
+          content = data.text;
+        } else {
+          // For txt and other text-based files
+          content = await file.text();
         }
+
+        await onSubmit(file.name.slice(0, 20), {
+          type: "file",
+          content: content, 
+          metadata: {
+            title: file.name,
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size,
+          }
+        });
+
         if (onFileSelect) {
           onFileSelect(file);
         }
+      } catch (err) {
+        console.error(err);
+        setError("读取文件失败，请重试");
       }
     },
     [maxSize, onSubmit, onFileSelect]
@@ -60,9 +173,13 @@ export function FileUpload({
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept,
     maxFiles: 1,
-    multiple: false,
+    accept: {
+      'text/plain': ['.txt'],
+      'application/pdf': ['.pdf'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
+    },
   });
 
   return (
@@ -75,7 +192,13 @@ export function FileUpload({
         isLoading && "opacity-50 pointer-events-none"
       )}
     >
-      <input {...getInputProps()} />
+      <input
+        {...getInputProps()}
+        type="file"
+        onChange={handleFileChange}
+        accept=".txt,.pdf,.doc,.docx"
+        className="hidden"
+      />
       <Icons.upload
         className={cn(
           "mb-4 h-8 w-8",
@@ -92,7 +215,7 @@ export function FileUpload({
         </p>
         {error && <p className="text-xs text-destructive">{error}</p>}
       </div>
-      {isLoading ? (
+      {isLoading || loading ? (
         <>
           <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
           处理中...

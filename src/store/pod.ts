@@ -16,29 +16,39 @@ export interface Dialogue {
   audioUrl?: string;
 }
 
+export interface SourceMetadata {
+  title: string;
+  description?: string;
+  wordCount?: number;
+  image?: string;
+  url?: string;
+  siteName?: string;
+  favicon?: string;
+  readingTime?: number;
+  authors?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  link?: string;
+  pdfLink?: string;
+  doi?: string;
+  journal?: string;
+  categories?: string[];
+  summary?: string;
+  // File-related metadata
+  fileName?: string;
+  fileType?: string;
+  fileSize?: number;
+}
+
 export interface PodSource {
   type: "url" | "file" | "text" | "paper";
   content: string;
-  metadata?: {
-    title: string;
-    description?: string;
-    wordCount?: number;
-    image?: string;
-
-    url?: string;
-    siteName?: string;
-    favicon?: string;
-    readingTime?: number;
-
-    authors?: string[];
-    createdAt?: string;
-    updatedAt?: string;
-    link?: string;
-    pdfLink?: string;
-    doi?: string;
-    journal?: string;
-    categories?: string[];
-    summary?: string;
+  metadata: SourceMetadata;
+  file?: {
+    name: string;
+    type: string;
+    size: number;
+    lastModified?: number;
   };
 }
 

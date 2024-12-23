@@ -49,7 +49,7 @@ export interface Pod {
   dialogues?: Dialogue[];
   audioUrl?: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
   status: "draft" | "ready" | "published";
 }
 

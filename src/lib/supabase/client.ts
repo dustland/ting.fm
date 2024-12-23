@@ -57,12 +57,15 @@ export async function uploadFile(file: File, bucket = "audio"): Promise<Attachme
   const path = `${nanoid()}.${ext}`;
 
   try {
+    console.log("Starting file upload...", path, file);
     const { data, error } = await supabase.storage
       .from(bucket)
       .upload(path, file, {
         cacheControl: "3600",
         upsert: false,
       });
+
+    console.log("File uploaded:", data, error);
 
     if (error) {
       throw error;

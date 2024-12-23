@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     // Upload merged file
     const url = await uploadFile(file, "audio");
 
-    return NextResponse.json({ url });
+    return NextResponse.json({ url: url.url });
   } catch (error) {
     console.error("[MERGE_AUDIO_ERROR]", error);
     return NextResponse.json(

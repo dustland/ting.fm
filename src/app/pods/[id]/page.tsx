@@ -100,37 +100,80 @@ export default function PodPage({ params }: Props) {
 
     try {
       setIsGeneratingPodcast(true);
-      // Generate individual audio files
-      const audioPromises = dialogues.map(async (dialogue) => {
-        const response = await fetch("/api/tts", {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            text: dialogue.content,
-            voice: dialogue.host === "奥德彪" ? "onyx" : "nova",
-          }),
-        });
 
-        if (!response.ok) {
-          throw new Error(`生成音频失败: ${dialogue.content.slice(0, 20)}...`);
+      // Function to handle a single TTS request with timeout
+      const generateAudioWithTimeout = async (
+        dialogue: (typeof dialogues)[0]
+      ) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+        try {
+          const response = await fetch("/api/tts", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              text: dialogue.content,
+              voice: dialogue.host === "奥德彪" ? "onyx" : "nova",
+            }),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error("TTS API error:", errorData);
+            throw new Error(
+              `生成音频失败: ${dialogue.content.slice(0, 20)}... (${
+                response.status
+              })`
+            );
+          }
+
+          const data = await response.json();
+          return {
+            url: data.url,
+            dialogueId: dialogue.id,
+          };
+        } catch (error: any) {
+          if (error.name === "AbortError") {
+            throw new Error(
+              `生成音频超时: ${dialogue.content.slice(0, 20)}...`
+            );
+          }
+          throw error;
+        } finally {
+          clearTimeout(timeoutId);
         }
+      };
 
-        const data = await response.json();
-        return {
-          url: data.url,
-          dialogueId: dialogue.id,
-        };
+      // Generate individual audio files with progress tracking
+      const audioPromises = dialogues.map((dialogue, index) =>
+        generateAudioWithTimeout(dialogue).catch((error) => {
+          console.error(`Error generating audio for dialogue ${index}:`, error);
+          throw error;
+        })
+      );
+
+      // Generate all audio files in parallel with overall timeout
+      const audioResults = await Promise.all(audioPromises).catch((error) => {
+        toast({
+          title: "生成音频失败",
+          description: error.message || "请稍后再试",
+          variant: "destructive",
+        });
+        throw error;
       });
-
-      // Generate all audio files in parallel
-      const audioResults = await Promise.all(audioPromises);
 
       // Update all dialogues with their audio URLs
       const updatedDialogues = dialogues.map((dialogue) => {
-        const audioResult = audioResults.find((r) => r.dialogueId === dialogue.id);
+        const audioResult = audioResults.find(
+          (r) => r.dialogueId === dialogue.id
+        );
         return audioResult
           ? { ...dialogue, audioUrl: audioResult.url }
           : dialogue;

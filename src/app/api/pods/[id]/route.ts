@@ -107,12 +107,20 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    const validatedData = podSchema.parse(body);
+    const updates = await req.json();
+    console.log("updating pod", updates);
+    const dbUpdates = {
+      ...(updates.title && { title: updates.title }),
+      ...(updates.source && { source: updates.source }),
+      ...(updates.dialogues && { dialogues: updates.dialogues }),
+      ...(updates.audioUrl && { audio_url: updates.audioUrl }),
+      ...(updates.status && { status: updates.status }),
+      updated_at: new Date().toISOString(),
+    };
 
     const { data: pod, error } = await supabase
       .from("pods")
-      .update(validatedData)
+      .update(dbUpdates)
       .eq("id", resolvedParams.id)
       .eq("user_id", user.id)
       .select()

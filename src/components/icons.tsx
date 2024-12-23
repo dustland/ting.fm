@@ -55,6 +55,8 @@ import {
   FileUp,
   Download,
   ChevronLeft,
+  Rewind,
+  FastForward,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -128,6 +130,8 @@ export const Icons = {
   podcast: Headphones,
   play: Play,
   pause: Pause,
+  rewind: Rewind,
+  fastForward: FastForward,
   share: Share2,
   edit: Edit,
   delete: Trash2,
@@ -165,6 +169,7 @@ export const Icons = {
   search: Search,
   google,
   arxiv,
+  x: X,
   user: User,
   file: File,
   externalLink: ExternalLink,

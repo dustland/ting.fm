@@ -86,9 +86,9 @@ export function usePod(podId: string) {
     async (dialogue: Dialogue) => {
       await wrappedUpdatePod({
         ...pod,
-        dialogues: pod.dialogues.map((d) =>
-          d.id === dialogue.id ? dialogue : d
-        ),
+        dialogues:
+          pod.dialogues?.map((d) => (d.id === dialogue.id ? dialogue : d)) ||
+          [],
       });
     },
     [pod, wrappedUpdatePod]

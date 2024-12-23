@@ -23,6 +23,7 @@ export default function PodPage({ params }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const [isGeneratingPodcast, setIsGeneratingPodcast] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false); // Add this line
   const { podcastSettings } = useSettingStore();
   const { pod, isLoading, isUpdating, updatePod, updateDialogue } = usePod(id);
   const dialoguesEndRef = useRef<HTMLDivElement>(null);
@@ -40,13 +41,6 @@ export default function PodPage({ params }: Props) {
         variant: "destructive",
       });
     },
-  });
-
-  console.log("PodPage: Rendering", {
-    isLoading,
-    isUpdating,
-    pod,
-    dialogues,
   });
 
   // Only redirect if pod is not found after loading is complete
@@ -228,6 +222,27 @@ export default function PodPage({ params }: Props) {
     }
   };
 
+  const handlePublish = async () => {
+    try {
+      setIsPublishing(true);
+      await updatePod({
+        ...pod,
+        status: pod?.status === "published" ? "ready" : "published",
+        updatedAt: new Date().toISOString(),
+      });
+      toast({
+        description: pod?.status === "published" ? "已取消发布" : "已发布",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        description: "发布失败",
+      });
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   const handleEdit = async (dialogueId: string, content: string) => {
     try {
       const dialogue = dialogues?.find((d) => d.id === dialogueId);
@@ -381,6 +396,30 @@ export default function PodPage({ params }: Props) {
                 </>
               )}
             </Button>
+
+            {pod?.audioUrl && (
+              <Button
+                variant={pod?.status === "published" ? "default" : "outline"}
+                size="sm"
+                className="h-8 ml-auto"
+                onClick={handlePublish}
+                disabled={isPublishing || isUpdating}
+              >
+                {isPublishing ? (
+                  <>
+                    <Icons.spinner className="h-3 w-3 animate-spin" />
+                    <span>处理中...</span>
+                  </>
+                ) : (
+                  <>
+                    <Icons.publish className="h-3 w-3" />
+                    <span>
+                      {pod?.status === "published" ? "取消发布" : "发布"}
+                    </span>
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -467,7 +506,7 @@ export default function PodPage({ params }: Props) {
                                 href={pod.source.metadata.link}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 hover:text-foreground"
+                                className="inline-flex items-center gap-1"
                               >
                                 <Icons.externalLink className="h-4 w-4" />
                                 <span>原文</span>
@@ -479,7 +518,7 @@ export default function PodPage({ params }: Props) {
                                 href={pod.source.metadata.pdfLink}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 hover:text-foreground"
+                                className="inline-flex items-center gap-1"
                               >
                                 <Icons.fileText className="h-4 w-4" />
                                 <span>PDF</span>

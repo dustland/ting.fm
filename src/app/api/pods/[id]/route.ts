@@ -100,29 +100,19 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    const body = await req.json();
     const supabase = await createClient();
     const user = await getUser();
-    const resolvedParams = await params;
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const updates = await req.json();
-    console.log("updating pod", updates);
-    const dbUpdates = {
-      ...(updates.title && { title: updates.title }),
-      ...(updates.source && { source: updates.source }),
-      ...(updates.dialogues && { dialogues: updates.dialogues }),
-      ...(updates.audioUrl && { audio_url: updates.audioUrl }),
-      ...(updates.status && { status: updates.status }),
-      updated_at: new Date().toISOString(),
-    };
-
     const { data: pod, error } = await supabase
       .from("pods")
-      .update(dbUpdates)
-      .eq("id", resolvedParams.id)
+      .update(body)
+      .eq("id", id)
       .eq("user_id", user.id)
       .select()
       .single();
@@ -134,29 +124,20 @@ export async function PATCH(
 
     // Convert snake_case to camelCase
     const formattedPod = {
-      id: resolvedParams.id,
+      id: pod.id,
       title: pod.title,
       source: pod.source,
       dialogues: pod.dialogues || [],
       audioUrl: pod.audio_url,
-      createdAt: pod.created_at || new Date().toISOString(),
-      updatedAt: pod.updated_at || new Date().toISOString(),
-      status: pod.status || "draft",
+      createdAt: pod.created_at,
+      updatedAt: pod.updated_at,
+      status: pod.status,
     };
 
     return NextResponse.json(formattedPod);
   } catch (error) {
-    console.error("[POD_UPDATE]", error);
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Invalid request data", details: error.errors },
-        { status: 400 }
-      );
-    }
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error("[PATCH_POD]", error);
+    return new NextResponse("Internal Error", { status: 500 });
   }
 }
 

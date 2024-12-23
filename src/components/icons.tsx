@@ -174,4 +174,5 @@ export const Icons = {
   book: Book,
   info: Info,
   display: Monitor,
+  publish: Share2,
 } as const;

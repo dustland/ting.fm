@@ -46,10 +46,10 @@ export interface Pod {
   id: string;
   title: string;
   source?: PodSource;
-  dialogues: Dialogue[];
+  dialogues?: Dialogue[];
   audioUrl?: string;
   createdAt: string;
-  updatedAt?: string;
+  updatedAt: string;
   status: "draft" | "ready" | "published";
 }
 
@@ -72,6 +72,7 @@ interface PodState {
   startOperation: (podId: string, operation: PodOperation) => void;
   endOperation: (podId: string) => void;
   getOperationStatus: (podId: string) => PodOperationStatus;
+  publishPod: (id: string, published: boolean) => Promise<void>;
 }
 
 const DEFAULT_STATUS: PodOperationStatus = {
@@ -223,6 +224,33 @@ export const usePodStore = create<PodState>()(
         }),
 
       getOperationStatus: (podId) => get().operationStatus[podId] || DEFAULT_STATUS,
+
+      publishPod: async (id, published) => {
+        try {
+          const response = await fetch(`/api/pods/${id}/publish`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ published }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to publish pod");
+          }
+
+          const updatedPod = await response.json();
+          set((state) => ({
+            pods: {
+              ...state.pods,
+              [id]: { ...state.pods[id], ...updatedPod },
+            },
+          }));
+        } catch (error) {
+          console.error("[PUBLISH_POD]", error);
+          throw error;
+        }
+      },
     }),
     {
       name: "tingfm-pods-storage",

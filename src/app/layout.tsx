@@ -3,6 +3,8 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Navbar } from "@/components/navbar"
 import { Toaster } from "@/components/ui/toaster"
+import { FloatingPlayer } from "@/components/player"; // Added import statement
+import { cn } from "@/lib/utils"; // Added import statement
 
 export const metadata: Metadata = {
   title: "Ting.fm - Podcast AI",
@@ -12,11 +14,11 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <html lang="zh" suppressHydrationWarning>
-      <body className="antialiased">
+      <body className={cn("min-h-screen bg-background font-sans antialiased")}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -27,9 +29,10 @@ export default function RootLayout({
             <Navbar />
             <main className="flex-1">{children}</main>
           </div>
+          <FloatingPlayer />
           <Toaster />
         </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }

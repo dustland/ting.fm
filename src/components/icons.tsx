@@ -54,6 +54,7 @@ import {
   LetterText,
   FileUp,
   Download,
+  ChevronLeft,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -147,6 +148,7 @@ export const Icons = {
   bot: Bot,
   speaker: Speaker,
   users: Users,
+  chevronLeft: ChevronLeft,
   chevronRight: ChevronRight,
   volume2: Volume2,
   square: Square,

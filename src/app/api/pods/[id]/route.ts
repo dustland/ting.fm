@@ -69,6 +69,7 @@ export async function GET(
     if (!pod) {
       return NextResponse.json({ error: "Pod not found" }, { status: 404 });
     }
+    console.log("pod", pod);
 
     // Convert snake_case to camelCase
     const formattedPod = {

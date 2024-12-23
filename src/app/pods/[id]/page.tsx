@@ -9,7 +9,6 @@ import { Icons } from "@/components/icons";
 import { useToast } from "@/hooks/use-toast";
 import { usePodChat } from "@/hooks/use-chat";
 import { usePod } from "@/hooks/use-pods";
-import { usePodStore } from "@/store/pod";
 import { useSettingStore } from "@/store/setting";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,6 +40,13 @@ export default function PodPage({ params }: Props) {
         variant: "destructive",
       });
     },
+  });
+
+  console.log("PodPage: Rendering", {
+    isLoading,
+    isUpdating,
+    pod,
+    dialogues,
   });
 
   // Only redirect if pod is not found after loading is complete
@@ -274,111 +280,116 @@ export default function PodPage({ params }: Props) {
   return (
     <div className="h-[calc(100vh-var(--navbar-height))] container flex flex-col p-2">
       <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col min-h-0">
-        <div className="flex-none">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold tracking-tight">
-              {pod?.title || pod?.source?.metadata?.title || "未命名播客"}
-            </h2>
+        {/* Header Section */}
+        <div className="flex-none space-y-2">
+          {/* Back Button and Title */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.back()}
+              className="shrink-0"
+            >
+              <Icons.chevronLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-lg sm:text-xl font-semibold truncate">
+              {pod?.title}
+            </h1>
           </div>
-          {pod?.source && (
-            <div className="flex flex-col space-y-2 mt-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Badge
-                    variant="outline"
-                    className="flex items-center space-x-2"
-                  >
-                    {getSourceTypeIcon(pod.source.type)}
-                    <span>{getSourceTypeText(pod.source.type)}</span>
-                  </Badge>
-                  {pod.source.metadata?.wordCount && (
-                    <Badge
-                      variant="secondary"
-                      className="hidden md:flex items-center space-x-2"
-                    >
-                      <Icons.documentText className="h-4 w-4" />
-                      <span>{pod.source.metadata.wordCount} 字</span>
-                    </Badge>
-                  )}
-                  {pod.source.metadata?.readingTime && (
-                    <Badge
-                      variant="secondary"
-                      className="hidden md:flex items-center space-x-2"
-                    >
-                      <Icons.clock className="h-4 w-4" />
-                      <span>{pod.source.metadata.readingTime} 分钟</span>
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {dialogues?.length > 0 && (
-                    <>
-                      <Button
-                        variant="outline"
-                        onClick={handleGenerateDialogues}
-                        className="flex items-center gap-2"
-                      >
-                        {isGeneratingDialogues ? (
-                          <>
-                            <Icons.spinner className="h-4 w-4 animate-spin" />
-                            <span>正在生成播客剧本...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Icons.wand className="h-4 w-4" />
-                            重新生成剧本
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        onClick={handleGeneratePodcast}
-                        disabled={isGeneratingPodcast}
-                        className="flex items-center gap-2"
-                      >
-                        {isGeneratingPodcast ? (
-                          <>
-                            <Icons.spinner className="h-4 w-4 animate-spin" />
-                            <span>正在生成播客...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Icons.podcast className="h-4 w-4" />
-                            生成播客
-                          </>
-                        )}
-                      </Button>
-                      {pod.audioUrl && (
-                        <div className="flex items-center gap-2">
-                          <audio
-                            controls
-                            src={pod.audioUrl}
-                            className="h-8 max-w-[300px]"
-                          />
-                          <Button variant="ghost" size="icon" asChild>
-                            <a
-                              href={pod.audioUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title="下载音频"
-                            >
-                              <Icons.download className="h-4 w-4" />
-                            </a>
-                          </Button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
+
+          {/* Metadata and Audio Player */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2">
+              {pod?.source?.metadata?.wordCount && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <Icons.documentText className="h-3 w-3" />
+                  <span>{pod.source.metadata.wordCount} 字</span>
+                </Badge>
+              )}
+              {pod?.source?.metadata?.readingTime && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <Icons.clock className="h-3 w-3" />
+                  <span>{pod.source.metadata.readingTime} 分钟</span>
+                </Badge>
+              )}
             </div>
-          )}
+
+            {pod?.audioUrl && (
+              <div className="flex items-center gap-2 ml-auto order-last w-full sm:w-auto mt-2 sm:mt-0">
+                <audio
+                  controls
+                  src={pod.audioUrl}
+                  className="h-8 w-full sm:w-[240px]"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                  asChild
+                >
+                  <a
+                    href={pod.audioUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="下载音频"
+                  >
+                    <Icons.download className="h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8"
+              onClick={() => handleGenerateDialogues()}
+              disabled={isGeneratingDialogues || !!dialogues?.length}
+            >
+              {isGeneratingDialogues ? (
+                <>
+                  <Icons.spinner className="h-3 w-3 animate-spin" />
+                  <span>生成剧本中...</span>
+                </>
+              ) : (
+                <>
+                  <Icons.wand className="h-3 w-3" />
+                  <span>生成剧本</span>
+                </>
+              )}
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8"
+              onClick={() => handleGeneratePodcast()}
+              disabled={isGeneratingPodcast || !dialogues?.length}
+            >
+              {isGeneratingPodcast ? (
+                <>
+                  <Icons.spinner className="h-3 w-3 animate-spin" />
+                  <span>生成播客中...</span>
+                </>
+              ) : (
+                <>
+                  <Icons.podcast className="h-3 w-3" />
+                  <span>生成播客</span>
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
+        {/* Tabs Section */}
         <Tabs
           defaultValue="source"
           className="flex-1 flex flex-col min-h-0 mt-3 sm:mt-6"
         >
-          <TabsList className="flex-none grid w-full grid-cols-2">
+          <TabsList className="flex-none grid w-full grid-cols-3">
             <TabsTrigger
               value="source"
               className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
@@ -393,55 +404,17 @@ export default function PodPage({ params }: Props) {
               <Icons.podcast className="h-3 w-3 sm:h-4 sm:w-4" />
               播客剧本
             </TabsTrigger>
+            <TabsTrigger
+              value="podcast"
+              className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
+              disabled={!pod?.audioUrl}
+            >
+              <Icons.headphones className="h-3 w-3 sm:h-4 sm:w-4" />
+              播客
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="dialogues" className="flex-1 min-h-0">
-            <Card className="h-full">
-              <CardContent className="p-0 h-full">
-                <ScrollArea className="h-full">
-                  <div className="p-4 space-y-4">
-                    {!dialogues?.length ? (
-                      <div className="flex flex-col items-center justify-center w-full h-full text-center py-8 gap-4 text-muted-foreground">
-                        <Icons.podcast className="mx-auto h-12 w-12 opacity-50" />
-                        <p>根据原文内容生成播客剧本</p>
-                        <Button
-                          onClick={handleGenerateDialogues}
-                          className="flex items-center gap-2"
-                        >
-                          {isGeneratingDialogues ? (
-                            <>
-                              <Icons.spinner className="h-4 w-4 animate-spin" />
-                              <span>正在生成播客剧本...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Icons.wand className="h-4 w-4" />
-                              生成播客剧本
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    ) : isGeneratingDialogues ? (
-                      <div className="flex items-center justify-center p-8">
-                        <Icons.spinner className="w-6 h-6 animate-spin" />
-                      </div>
-                    ) : (
-                      dialogues?.map((dialogue) => (
-                        <DialogueLine
-                          key={dialogue.id}
-                          dialogue={dialogue}
-                          onEdit={handleEdit}
-                        />
-                      ))
-                    )}
-                  </div>
-                  <div ref={dialoguesEndRef} />
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="source" className="flex-1 min-h-0 mt-4">
+          <TabsContent value="source" className="flex-1 min-h-0">
             <Card className="h-full">
               <CardContent className="p-0 h-full">
                 <ScrollArea className="h-full">
@@ -563,6 +536,150 @@ export default function PodPage({ params }: Props) {
                       <p>播客内容加载中...</p>
                     </div>
                   )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="dialogues" className="flex-1 min-h-0">
+            <Card className="h-full">
+              <CardContent className="p-0 h-full">
+                <ScrollArea className="h-full">
+                  <div className="p-4 space-y-4">
+                    {!dialogues?.length ? (
+                      <div className="flex flex-col items-center justify-center w-full h-full text-center py-8 gap-4 text-muted-foreground">
+                        <Icons.podcast className="mx-auto h-12 w-12 opacity-50" />
+                        <p>根据原文内容生成播客剧本</p>
+                        <Button
+                          onClick={handleGenerateDialogues}
+                          className="flex items-center gap-2"
+                        >
+                          {isGeneratingDialogues ? (
+                            <>
+                              <Icons.spinner className="h-4 w-4 animate-spin" />
+                              <span>正在生成播客剧本...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Icons.wand className="h-4 w-4" />
+                              <span>生成播客剧本</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    ) : isGeneratingDialogues ? (
+                      <div className="flex items-center justify-center p-8">
+                        <Icons.spinner className="w-6 h-6 animate-spin" />
+                      </div>
+                    ) : (
+                      dialogues?.map((dialogue) => (
+                        <DialogueLine
+                          key={dialogue.id}
+                          dialogue={dialogue}
+                          onEdit={handleEdit}
+                        />
+                      ))
+                    )}
+                  </div>
+                  <div ref={dialoguesEndRef} />
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="podcast" className="flex-1 min-h-0 relative">
+            <Card className="absolute inset-0">
+              <CardContent className="p-0 h-full">
+                <ScrollArea className="h-full">
+                  <div className="p-2 sm:p-6 space-y-6">
+                    {/* Audio Player Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h2 className="text-lg sm:text-xl font-semibold mb-2">
+                            {pod?.title}
+                          </h2>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            {pod?.source?.metadata?.wordCount && (
+                              <div className="flex items-center gap-1">
+                                <Icons.documentText className="h-3.5 w-3.5" />
+                                <span>{pod.source.metadata.wordCount}字</span>
+                              </div>
+                            )}
+                            {pod?.source?.metadata?.readingTime && (
+                              <div className="flex items-center gap-1">
+                                <Icons.clock className="h-3.5 w-3.5" />
+                                <span>
+                                  {pod.source.metadata.readingTime}分钟
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="icon" asChild>
+                          <a
+                            href={pod?.audioUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="下载音频"
+                          >
+                            <Icons.download className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      </div>
+
+                      <div className="bg-muted/50 rounded-lg p-3">
+                        <audio
+                          controls
+                          src={pod?.audioUrl}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium">简介</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {pod?.source?.metadata?.summary ||
+                          pod?.source?.content?.slice(0, 200)}
+                        ...
+                      </p>
+                    </div>
+
+                    {/* Source Links */}
+                    {(pod?.source?.metadata?.link ||
+                      pod?.source?.metadata?.pdfLink) && (
+                      <div className="flex flex-wrap gap-2">
+                        {pod.source.metadata.link && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a
+                              href={pod.source.metadata.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5"
+                            >
+                              <Icons.externalLink className="h-3.5 w-3.5" />
+                              原文
+                            </a>
+                          </Button>
+                        )}
+                        {pod.source.metadata.pdfLink && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a
+                              href={pod.source.metadata.pdfLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5"
+                            >
+                              <Icons.fileText className="h-3.5 w-3.5" />
+                              PDF
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </ScrollArea>
               </CardContent>
             </Card>

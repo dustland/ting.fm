@@ -8,7 +8,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "playwright install chromium",
     "test": "jest",
     "test:merge-audio": "NODE_OPTIONS='--import tsx' tsx supabase/functions/merge-audio/test-merge-audio.ts"
   },

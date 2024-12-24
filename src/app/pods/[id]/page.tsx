@@ -322,53 +322,36 @@ export default function PodPage({ params }: Props) {
   };
 
   return (
-    <div className="h-[calc(100vh-var(--navbar-height))] container flex flex-col p-2">
-      <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col min-h-0">
-        {/* Header Section */}
-        <div className="flex-none space-y-2">
-          {/* Back Button and Title */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.back()}
-              className="shrink-0"
-            >
-              <Icons.chevronLeft className="h-4 w-4" />
-            </Button>
-            <h1 className="text-lg sm:text-xl font-semibold truncate">
-              {pod?.title}
-            </h1>
-          </div>
+    <div className="flex h-[calc(100vh-4rem)] flex-col">
+      {/* Header */}
+      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-14 items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => router.push("/pods")}
+          >
+            <Icons.chevronLeft className="h-4 w-4" />
+          </Button>
 
-          {/* Metadata and Audio Player */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2">
-              {pod?.source?.metadata?.wordCount && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <Icons.documentText className="h-3 w-3" />
-                  <span>{pod.source.metadata.wordCount} 字</span>
-                </Badge>
-              )}
-              {pod?.source?.metadata?.readingTime && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <Icons.clock className="h-3 w-3" />
-                  <span>{pod.source.metadata.readingTime} 分钟</span>
-                </Badge>
-              )}
-            </div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-semibold">{pod.title}</h1>
           </div>
         </div>
+      </div>
 
+      {/* Content */}
+      <div className="flex-1 container py-4 overflow-hidden">
         {/* Content Area */}
-        <div className="flex-1 min-h-0 mt-4">
-          <Tabs defaultValue="source" className="flex-1">
-            <div className="flex items-center w-full justify-between gap-2 mb-4">
-              <TabsList className="h-8">
-                <TabsTrigger value="source" className="text-xs px-3">
+        <div className="flex flex-col h-full">
+          <Tabs defaultValue="source" className="flex flex-col flex-1">
+            <div className="flex items-center w-full justify-between gap-2">
+              <TabsList>
+                <TabsTrigger value="source" className="px-3">
                   原文内容
                 </TabsTrigger>
-                <TabsTrigger value="dialogues" className="text-xs px-3">
+                <TabsTrigger value="dialogues" className="px-3">
                   播客剧本
                 </TabsTrigger>
               </TabsList>
@@ -378,7 +361,6 @@ export default function PodPage({ params }: Props) {
                   <Button
                     onClick={() => handleGenerateDialogues()}
                     variant="outline"
-                    size="sm"
                     disabled={isGeneratingDialogues}
                     className="h-8"
                   >
@@ -397,7 +379,6 @@ export default function PodPage({ params }: Props) {
                   <Button
                     onClick={handleGeneratePodcast}
                     variant="outline"
-                    size="sm"
                     disabled={isGeneratingPodcast}
                     className="h-8"
                   >
@@ -436,10 +417,10 @@ export default function PodPage({ params }: Props) {
               )}
             </div>
 
-            <TabsContent value="source" className="flex-1 min-h-0">
-              <Card className="h-full">
-                <CardContent className="p-0 h-full">
-                  <ScrollArea className="h-full">
+            <TabsContent value="source" className="flex-1 mt-2">
+              <Card className="h-[calc(100vh-12rem)]">
+                <CardContent className="h-full p-0">
+                  <ScrollArea className="h-full" type="always">
                     {pod?.source ? (
                       <div className="p-4 prose prose-sm max-w-none">
                         <div className="flex items-center gap-2 mb-4">
@@ -462,10 +443,10 @@ export default function PodPage({ params }: Props) {
               </Card>
             </TabsContent>
 
-            <TabsContent value="dialogues" className="flex-1 min-h-0">
-              <Card className="h-full">
-                <CardContent className="relative p-0 h-full">
-                  <ScrollArea className="h-full">
+            <TabsContent value="dialogues" className="flex-1 mt-2">
+              <Card className="h-[calc(100vh-12rem)]">
+                <CardContent className="h-full p-0">
+                  <ScrollArea className="h-full" type="always">
                     <div className="p-4 space-y-4">
                       {!dialogues?.length ? (
                         <div className="flex flex-col items-center justify-center min-h-[400px] py-8 gap-6">
@@ -495,24 +476,24 @@ export default function PodPage({ params }: Props) {
             </TabsContent>
           </Tabs>
         </div>
-
-        {/* Floating Player */}
-        {dialogues?.length > 0 && (
-          <FloatingPlayer
-            pod={{
-              id: pod.id,
-              title: pod.title,
-              audioUrl: pod.audioUrl,
-              status: pod.status,
-              summary: pod.summary
-            }}
-            onGenerate={handleGeneratePodcast}
-            onPublish={handlePublish}
-            isGenerating={isGeneratingPodcast}
-            isPublishing={isPublishing}
-          />
-        )}
       </div>
+
+      {/* Floating Player */}
+      {dialogues?.length > 0 && (
+        <FloatingPlayer
+          pod={{
+            id: pod.id,
+            title: pod.title,
+            audioUrl: pod.audioUrl,
+            status: pod.status,
+            summary: pod.source?.metadata?.summary,
+          }}
+          onGenerate={handleGeneratePodcast}
+          onPublish={handlePublish}
+          isGenerating={isGeneratingPodcast}
+          isPublishing={isPublishing}
+        />
+      )}
     </div>
   );
 }

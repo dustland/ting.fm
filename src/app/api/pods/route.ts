@@ -19,8 +19,6 @@ export async function GET() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    console.log("pods", pods);
-
     if (error) throw error;
 
     // Convert snake_case to camelCase

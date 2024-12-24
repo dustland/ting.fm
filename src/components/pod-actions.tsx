@@ -64,8 +64,8 @@ export function PodActions({ pod }: PodActionsProps) {
             },
             body: JSON.stringify({
               text: dialogue.content,
-              host: podcastSettings.hosts.find(h => h.name === dialogue.host),
-              ttsModel: podcastSettings.ttsModel,
+              host: dialogue.host,
+              settings: podcastSettings,
             }),
             signal: controller.signal,
           });

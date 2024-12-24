@@ -35,7 +35,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const { text, host, ttsModel } = await request.json();
+    const { text, host, settings } = await request.json();
+
+    console.log("[TTS] Received request:", {
+      text,
+      host,
+      settings,
+    });
 
     if (!text || !host) {
       return NextResponse.json(
@@ -45,19 +51,27 @@ export async function POST(request: Request) {
     }
 
     let audioBuffer: ArrayBuffer;
+    const ttsModel = settings?.ttsModel || "openai";
+
+    // const voice = settings.hosts.find(
+    //   (h: PodcastHost) => h.id === host.id
+    // )?.voice;
+
+    // Simplified voice mapping
+    const voice = host === "奥德彪" ? "onyx" : "nova";
 
     switch (ttsModel) {
       case "openai":
-        audioBuffer = await generateOpenAITTS(text, host);
+        audioBuffer = await generateOpenAITTS(text, voice);
         break;
       case "doubao":
-        audioBuffer = await generateDoubaoTTS(text, host);
+        audioBuffer = await generateDoubaoTTS(text, voice);
         break;
       case "tongyi":
-        audioBuffer = await generateTongyiTTS(text, host);
+        audioBuffer = await generateTongyiTTS(text, voice);
         break;
       case "elevenlabs":
-        audioBuffer = await generateElevenLabsTTS(text, host);
+        audioBuffer = await generateElevenLabsTTS(text, voice);
         break;
       default:
         return NextResponse.json(
@@ -91,7 +105,7 @@ export async function POST(request: Request) {
 
 async function generateOpenAITTS(
   text: string,
-  host: PodcastHost
+  voice: string
 ): Promise<ArrayBuffer> {
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -101,7 +115,7 @@ async function generateOpenAITTS(
   const mp3 = await retryWithExponentialBackoff(async () => {
     return await openai.audio.speech.create({
       model: "tts-1",
-      voice: host.gender === "male" ? "onyx" : "nova",
+      voice: voice as any,
       input: text,
     });
   });
@@ -112,7 +126,7 @@ async function generateOpenAITTS(
 
 async function generateDoubaoTTS(
   text: string,
-  host: PodcastHost
+  voice: string
 ): Promise<ArrayBuffer> {
   // TODO: Implement 豆包 TTS
   throw new Error("豆包 TTS not implemented yet");
@@ -120,7 +134,7 @@ async function generateDoubaoTTS(
 
 async function generateTongyiTTS(
   text: string,
-  host: PodcastHost
+  voice: string
 ): Promise<ArrayBuffer> {
   // TODO: Implement 通义 TTS
   throw new Error("通义 TTS not implemented yet");
@@ -128,7 +142,7 @@ async function generateTongyiTTS(
 
 async function generateElevenLabsTTS(
   text: string,
-  host: PodcastHost
+  voice: string
 ): Promise<ArrayBuffer> {
   // TODO: Implement ElevenLabs TTS
   throw new Error("ElevenLabs TTS not implemented yet");

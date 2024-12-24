@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialogue } from "@/store/pod";
+import { useSettingStore } from "@/store/setting";
 
 interface DialogueLineProps {
   dialogue: Dialogue;
@@ -15,7 +16,11 @@ interface DialogueLineProps {
   onEdit?: (id: string, content: string) => void;
 }
 
-export function DialogueLine({ dialogue, className, onEdit }: DialogueLineProps) {
+export function DialogueLine({
+  dialogue,
+  className,
+  onEdit,
+}: DialogueLineProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(dialogue.content);
@@ -24,6 +29,7 @@ export function DialogueLine({ dialogue, className, onEdit }: DialogueLineProps)
     isPlaying: boolean;
   }>({ isLoading: false, isPlaying: false });
   const audioRef = useRef<HTMLAudioElement>(null);
+  const { podcastSettings } = useSettingStore();
 
   const handleEdit = () => {
     if (!onEdit) return;
@@ -56,7 +62,8 @@ export function DialogueLine({ dialogue, className, onEdit }: DialogueLineProps)
         },
         body: JSON.stringify({
           text,
-          voice: dialogue.host === "奥德彪" ? "onyx" : "nova",
+          host: dialogue.host,
+          seetings: podcastSettings,
         }),
       });
 

@@ -3,7 +3,6 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Navbar } from "@/components/navbar"
 import { Toaster } from "@/components/ui/toaster"
-import { FloatingPlayer } from "@/components/player";
 import { cn } from "@/lib/utils";
 import { PlayerProvider } from "@/components/player-provider";
 
@@ -29,13 +28,10 @@ export default function RootLayout({
           <PlayerProvider>
             <div className="relative isolate flex h-screen flex-col">
               <Navbar />
-              <div className="relative flex-1 overflow-hidden">
-                <div className="absolute inset-0 overflow-y-auto">
-                  <main className="min-h-full">{children}</main>
-                </div>
-              </div>
+              <main className="h-[calc(100vh-var(--navbar-height))] overflow-y-auto">
+                {children}
+              </main>
             </div>
-            <FloatingPlayer />
             <Toaster />
           </PlayerProvider>
         </ThemeProvider>

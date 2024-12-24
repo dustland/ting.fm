@@ -1,13 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-
-interface Pod {
-  id: string;
-  title: string;
-  audioUrl?: string;
-  status?: string;
-  summary?: string;
-}
+import { Pod } from "./pod";
 
 interface PlayerState {
   currentPod: Pod | null;

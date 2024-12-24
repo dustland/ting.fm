@@ -3,17 +3,16 @@
 import { use, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Icons } from "@/components/icons";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DialogueLine } from "@/components/dialogue-line";
-import { Icons } from "@/components/icons";
 import { useToast } from "@/hooks/use-toast";
 import { usePodChat } from "@/hooks/use-chat";
 import { usePod } from "@/hooks/use-pods";
 import { useSettingStore } from "@/store/setting";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { FloatingPlayer } from "@/components/player";
+import { PodActions } from "@/components/pod-actions";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -23,16 +22,13 @@ export default function PodPage({ params }: Props) {
   const { id } = use(params);
   const router = useRouter();
   const { toast } = useToast();
-  const [isGeneratingPodcast, setIsGeneratingPodcast] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false); // Add this line
   const { podcastSettings } = useSettingStore();
-  const { pod, isLoading, isUpdating, updatePod, updateDialogue } = usePod(id);
+  const { pod, isLoading, isUpdating, updateDialogue } = usePod(id);
   const dialoguesEndRef = useRef<HTMLDivElement>(null);
   const {
     append,
     isLoading: isGeneratingDialogues,
     dialogues,
-    stop,
   } = usePodChat({
     podId: id,
     options: podcastSettings,
@@ -90,183 +86,6 @@ export default function PodPage({ params }: Props) {
     }
   };
 
-  const handleGeneratePodcast = async () => {
-    if (!dialogues?.length) {
-      toast({
-        title: "错误",
-        description: "没有对话内容可以生成",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsGeneratingPodcast(true);
-
-      // Function to handle a single TTS request with timeout
-      const generateAudioWithTimeout = async (
-        dialogue: (typeof dialogues)[0]
-      ) => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-        try {
-          const response = await fetch("/api/tts", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              text: dialogue.content,
-              voice: dialogue.host === "奥德彪" ? "onyx" : "nova",
-            }),
-            signal: controller.signal,
-          });
-
-          clearTimeout(timeoutId);
-
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error("TTS API error:", errorData);
-            throw new Error(
-              `生成音频失败: ${dialogue.content.slice(0, 20)}... (${
-                response.status
-              })`
-            );
-          }
-
-          const data = await response.json();
-          return {
-            url: data.url,
-            dialogueId: dialogue.id,
-          };
-        } catch (error: any) {
-          if (error.name === "AbortError") {
-            throw new Error(
-              `生成音频超时: ${dialogue.content.slice(0, 20)}...`
-            );
-          }
-          throw error;
-        } finally {
-          clearTimeout(timeoutId);
-        }
-      };
-
-      // Generate individual audio files with progress tracking
-      const audioPromises = dialogues.map((dialogue, index) =>
-        generateAudioWithTimeout(dialogue).catch((error) => {
-          console.error(`Error generating audio for dialogue ${index}:`, error);
-          throw error;
-        })
-      );
-
-      // Generate all audio files in parallel with overall timeout
-      const audioResults = await Promise.all(audioPromises).catch((error) => {
-        toast({
-          title: "生成音频失败",
-          description: error.message || "请稍后再试",
-          variant: "destructive",
-        });
-        throw error;
-      });
-
-      // Update all dialogues with their audio URLs
-      const updatedDialogues = dialogues.map((dialogue) => {
-        const audioResult = audioResults.find(
-          (r) => r.dialogueId === dialogue.id
-        );
-        return audioResult
-          ? { ...dialogue, audioUrl: audioResult.url }
-          : dialogue;
-      });
-
-      // Generate merged audio
-      const response = await fetch("/api/tts/merge", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          podId: id,
-          segments: audioResults.map((r) => ({
-            // Extract just the filename from the full URL
-            url: r.url.split('/').pop()!,
-            duration: 0
-          }))
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Merge API error:", errorData);
-        throw new Error(errorData.error || "合并音频失败");
-      }
-
-      const { publicUrl: mergedAudioUrl } = await response.json();
-
-      // Update pod with all audio URLs in one call
-      if (pod) {
-        await updatePod({
-          ...pod,
-          audioUrl: mergedAudioUrl,
-          dialogues: updatedDialogues,
-          updatedAt: new Date().toISOString(),
-        });
-      }
-
-      toast({
-        title: "成功",
-        description: "音频已生成完成",
-      });
-    } catch (error) {
-      toast({
-        title: "错误",
-        description: error instanceof Error ? error.message : "生成播客失败",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingPodcast(false);
-    }
-  };
-
-  const handlePublish = async () => {
-    if (!pod?.audioUrl) {
-      toast({
-        title: "错误",
-        description: "请先生成播客音频",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsPublishing(true);
-      const newStatus = pod.status === "published" ? "draft" : "published";
-
-      const updatedPod = {
-        ...pod,
-        status: newStatus as "draft" | "ready" | "published",
-        updatedAt: new Date().toISOString(),
-      };
-
-      await updatePod(updatedPod);
-
-      toast({
-        description: newStatus === "published" ? "已发布" : "已取消发布",
-      });
-    } catch (error) {
-      console.error("Error publishing pod:", error);
-      toast({
-        variant: "destructive",
-        description: "发布失败，请稍后再试",
-      });
-    } finally {
-      setIsPublishing(false);
-    }
-  };
-
   const handleEdit = async (dialogueId: string, content: string) => {
     try {
       const dialogue = dialogues?.find((d) => d.id === dialogueId);
@@ -284,11 +103,6 @@ export default function PodPage({ params }: Props) {
         variant: "destructive",
       });
     }
-  };
-
-  const handleStopGenerating = () => {
-    stop();
-    setIsGeneratingPodcast(false);
   };
 
   const getSourceTypeIcon = (type: string) => {
@@ -322,10 +136,10 @@ export default function PodPage({ params }: Props) {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col">
+    <div className="flex h-full flex-col">
       {/* Header */}
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center gap-4">
+        <div className="container flex h-14 items-center gap-4 p-2">
           <Button
             variant="ghost"
             size="icon"
@@ -336,89 +150,50 @@ export default function PodPage({ params }: Props) {
           </Button>
 
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold">{pod.title}</h1>
+            <h1 className="lg:text-lg font-semibold">{pod.title}</h1>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 container py-4 overflow-hidden">
+      <div className="flex-1 container p-2">
         {/* Content Area */}
         <div className="flex flex-col h-full">
-          <Tabs defaultValue="source" className="flex flex-col flex-1">
-            <div className="flex items-center w-full justify-between gap-2">
+          <Tabs defaultValue="dialogues" className="flex flex-col flex-1">
+            <div className="flex flex-wrap items-center w-full justify-between gap-2">
               <TabsList>
                 <TabsTrigger value="source" className="px-3">
-                  原文内容
+                  原文
                 </TabsTrigger>
                 <TabsTrigger value="dialogues" className="px-3">
-                  播客剧本
+                  剧本
                 </TabsTrigger>
               </TabsList>
 
-              {dialogues?.length ? (
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={() => handleGenerateDialogues()}
-                    variant="outline"
-                    disabled={isGeneratingDialogues}
-                    className="h-8"
-                  >
-                    {isGeneratingDialogues ? (
-                      <>
-                        <Icons.spinner className="h-3.5 w-3.5 animate-spin mr-2" />
-                        <span>生成中...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Icons.wand className="h-3.5 w-3.5 mr-2" />
-                        <span>重新生成剧本</span>
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    onClick={handleGeneratePodcast}
-                    variant="outline"
-                    disabled={isGeneratingPodcast}
-                    className="h-8"
-                  >
-                    {isGeneratingPodcast ? (
-                      <>
-                        <Icons.spinner className="h-3.5 w-3.5 animate-spin mr-2" />
-                        <span>生成中...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Icons.podcast className="h-3.5 w-3.5 mr-2" />
-                        <span>重新生成播客</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  onClick={() => handleGenerateDialogues()}
-                  size="sm"
-                  disabled={isGeneratingDialogues}
-                  className="h-8"
-                >
-                  {isGeneratingDialogues ? (
-                    <>
-                      <Icons.spinner className="h-3.5 w-3.5 animate-spin mr-2" />
-                      <span>生成中...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Icons.wand className="h-3.5 w-3.5 mr-2" />
-                      <span>生成剧本</span>
-                    </>
-                  )}
-                </Button>
-              )}
+              <Button
+                onClick={() => handleGenerateDialogues()}
+                variant="outline"
+                disabled={isGeneratingDialogues}
+                className="h-8"
+              >
+                {isGeneratingDialogues ? (
+                  <>
+                    <Icons.spinner className="h-3.5 w-3.5 animate-spin mr-2" />
+                    <span>生成中...</span>
+                  </>
+                ) : (
+                  <>
+                    <Icons.wand className="h-3.5 w-3.5 mr-2" />
+                    <span>
+                      {dialogues?.length ? "重新生成剧本" : "生成剧本"}
+                    </span>
+                  </>
+                )}
+              </Button>
             </div>
 
-            <TabsContent value="source" className="flex-1 mt-2">
-              <Card className="h-[calc(100vh-12rem)]">
+            <TabsContent value="source" className="flex-1">
+              <Card className="h-full flex flex-col">
                 <CardContent className="h-full p-0">
                   <ScrollArea className="h-full" type="always">
                     {pod?.source ? (
@@ -444,7 +219,7 @@ export default function PodPage({ params }: Props) {
             </TabsContent>
 
             <TabsContent value="dialogues" className="flex-1 mt-2">
-              <Card className="h-[calc(100vh-12rem)]">
+              <Card className="h-full flex flex-col">
                 <CardContent className="h-full p-0">
                   <ScrollArea className="h-full" type="always">
                     <div className="p-4 space-y-4">
@@ -478,22 +253,12 @@ export default function PodPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Floating Player */}
-      {dialogues?.length > 0 && (
-        <FloatingPlayer
-          pod={{
-            id: pod.id,
-            title: pod.title,
-            audioUrl: pod.audioUrl,
-            status: pod.status,
-            summary: pod.source?.metadata?.summary,
-          }}
-          onGenerate={handleGeneratePodcast}
-          onPublish={handlePublish}
-          isGenerating={isGeneratingPodcast}
-          isPublishing={isPublishing}
-        />
-      )}
+      {/* Pod Actions */}
+      <div className="sticky bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container py-2 px-4">
+          <PodActions pod={pod} />
+        </div>
+      </div>
     </div>
   );
 }

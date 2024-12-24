@@ -61,6 +61,7 @@ import {
   Music,
   Rss,
   ChevronDown,
+  RefreshCcw,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -153,6 +154,7 @@ export const Icons = {
   success: CheckCircle,
   clock: Clock,
   audio: Mic,
+  refresh: RefreshCcw,
   plus: Plus,
   trash: Trash2,
   save: Save,

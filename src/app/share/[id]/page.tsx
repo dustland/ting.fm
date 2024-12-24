@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { AudioPlayer } from "@/components/player";
+import { PodPlayer } from "@/components/pod-player";
 import { createClient } from "@/lib/supabase/server";
 
 interface SharePageProps {
@@ -56,19 +56,11 @@ export default async function SharePage({ params }: SharePageProps) {
       notFound();
     }
 
-    const formattedPod = {
-      id: pod.id,
-      title: pod.title,
-      audioUrl: pod.audio_url,
-      status: pod.status,
-      summary: pod.source?.metadata?.summary,
-    };
-
     return (
       <div className="container max-w-screen-xl mx-auto px-4 py-8">
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)]">
           <div className="w-full max-w-2xl">
-            <AudioPlayer pod={formattedPod} />
+            <PodPlayer pod={pod} variant="inline" />
           </div>
         </div>
       </div>

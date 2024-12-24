@@ -16,10 +16,7 @@ export function PlayerProvider({
   return (
     <>
       {children}
-      <FloatingPlayer
-        pod={currentPod}
-        forceShow={isPodDetailPage && !!currentPod}
-      />
+      {currentPod && <FloatingPlayer pod={currentPod} />}
     </>
   );
 }

@@ -47,7 +47,7 @@ export function Navbar() {
         {/* Logo and Desktop Navigation */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center space-x-2">
-            <Icons.logo className="h-5 w-5" />
+            <Icons.logo className="h-7 w-7" />
             <span className="hidden font-bold sm:inline-block">Ting.fm</span>
           </Link>
           <nav className="hidden sm:flex">

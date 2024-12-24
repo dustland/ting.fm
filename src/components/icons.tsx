@@ -121,8 +121,66 @@ export function arxiv({ ...props }: any) {
   );
 }
 
+export function logo({ ...props }: LucideProps) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {/* Outer ear shape */}
+      <path
+        d="M12 3c3.5 0 7 2.5 7 7.5 0 3.5-2 6.5-5 7.5"
+        className="opacity-90"
+      />
+      <path
+        d="M12 3c-3.5 0-7 2.5-7 7.5 0 3.5 2 6.5 5 7.5"
+        className="opacity-90"
+      />
+
+      {/* Inner ear canal */}
+      <path
+        d="M12 8c2 0 3.5 1.5 3.5 3.5 0 2-1.5 3.5-3.5 3.5"
+        className="animate-pulse"
+      >
+        <animate
+          attributeName="d"
+          dur="1.5s"
+          repeatCount="indefinite"
+          values="M12 8c2 0 3.5 1.5 3.5 3.5 0 2-1.5 3.5-3.5 3.5;M12 7c2.5 0 4 2 4 4.5 0 2.5-2 4-4 4;M12 8c2 0 3.5 1.5 3.5 3.5 0 2-1.5 3.5-3.5 3.5"
+        />
+      </path>
+      <path
+        d="M12 8c-2 0-3.5 1.5-3.5 3.5 0 2 1.5 3.5 3.5 3.5"
+        className="animate-pulse"
+      >
+        <animate
+          attributeName="d"
+          dur="1.5s"
+          repeatCount="indefinite"
+          values="M12 8c-2 0-3.5 1.5-3.5 3.5 0 2 1.5 3.5 3.5 3.5;M12 7c-2.5 0-4 2-4 4.5 0 2.5 2 4 4 4;M12 8c-2 0-3.5 1.5-3.5 3.5 0 2 1.5 3.5 3.5 3.5"
+        />
+      </path>
+
+      {/* Eardrum (center circle) */}
+      <circle cx="12" cy="11.5" r="2" className="fill-green-500 stroke-none" />
+
+      {/* Sound waves in ear canal */}
+      <path d="M12 18c-1 1-2 1.5-3 1.5" className="opacity-75" />
+      <path d="M12 18c1 1 2 1.5 3 1.5" className="opacity-75" />
+    </svg>
+  );
+}
+
 export const Icons = {
-  logo: Radio,
+  logo,
   home: Home,
   create: Plus,
   discover: Compass,

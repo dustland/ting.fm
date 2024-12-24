@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <!-- Outer ear shape -->
+  <path 
+    d="M12 3c3.5 0 7 2.5 7 7.5 0 3.5-2 6.5-5 7.5"
+    class="opacity-90"
+  />
+  <path 
+    d="M12 3c-3.5 0-7 2.5-7 7.5 0 3.5 2 6.5 5 7.5"
+    class="opacity-90"
+  />
+  
+  <!-- Inner ear canal -->
+  <path 
+    d="M12 8c2 0 3.5 1.5 3.5 3.5 0 2-1.5 3.5-3.5 3.5"
+    class="animate-pulse"
+  >
+    <animate
+      attributeName="d"
+      dur="1.5s"
+      repeatCount="indefinite"
+      values="M12 8c2 0 3.5 1.5 3.5 3.5 0 2-1.5 3.5-3.5 3.5;M12 7c2.5 0 4 2 4 4.5 0 2.5-2 4-4 4;M12 8c2 0 3.5 1.5 3.5 3.5 0 2-1.5 3.5-3.5 3.5"
+    />
+  </path>
+  <path 
+    d="M12 8c-2 0-3.5 1.5-3.5 3.5 0 2 1.5 3.5 3.5 3.5"
+    class="animate-pulse"
+  >
+    <animate
+      attributeName="d"
+      dur="1.5s"
+      repeatCount="indefinite"
+      values="M12 8c-2 0-3.5 1.5-3.5 3.5 0 2 1.5 3.5 3.5 3.5;M12 7c-2.5 0-4 2-4 4.5 0 2.5 2 4 4 4;M12 8c-2 0-3.5 1.5-3.5 3.5 0 2 1.5 3.5 3.5 3.5"
+    />
+  </path>
+
+  <!-- Eardrum (center circle) -->
+  <circle cx="12" cy="11.5" r="2" fill="#22c55e" stroke="none" />
+
+  <!-- Sound waves in ear canal -->
+  <path 
+    d="M12 18c-1 1-2 1.5-3 1.5" 
+    class="opacity-75" 
+  />
+  <path 
+    d="M12 18c1 1 2 1.5 3 1.5" 
+    class="opacity-75" 
+  />
+
+  <style>
+    path {
+      stroke: currentColor;
+    }
+    .animate-pulse {
+      animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .7; }
+    }
+    .opacity-90 {
+      opacity: 0.9;
+    }
+    .opacity-75 {
+      opacity: 0.75;
+    }
+  </style>
+</svg>

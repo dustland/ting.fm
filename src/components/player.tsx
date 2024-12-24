@@ -59,9 +59,18 @@ const Generator = ({ onGenerate, isGenerating }: { onGenerate?: () => void; isGe
   );
 };
 
-const AudioPlayer = ({ pod, onPublish, isPublishing }: { pod: PlayerProps['pod']; onPublish?: () => Promise<void>; isPublishing?: boolean }) => {
+export function AudioPlayer({
+  pod,
+  onPublish,
+  isPublishing,
+}: {
+  pod: PlayerProps["pod"];
+  onPublish?: () => Promise<void>;
+  isPublishing?: boolean;
+}) {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const { currentPod, isPlaying, play, pause, toggle, setCurrentPod } = usePlayerStore();
+  const { currentPod, isPlaying, play, pause, toggle, setCurrentPod } =
+    usePlayerStore();
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -78,7 +87,7 @@ const AudioPlayer = ({ pod, onPublish, isPublishing }: { pod: PlayerProps['pod']
       if (isPlaying) {
         const playPromise = audioRef.current.play();
         if (playPromise !== undefined) {
-          playPromise.catch(error => {
+          playPromise.catch((error) => {
             if (error.name === "NotAllowedError") {
               pause();
             }
@@ -112,7 +121,7 @@ const AudioPlayer = ({ pod, onPublish, isPublishing }: { pod: PlayerProps['pod']
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
   const handlePublishClick = async () => {
@@ -124,6 +133,25 @@ const AudioPlayer = ({ pod, onPublish, isPublishing }: { pod: PlayerProps['pod']
       return;
     }
     await onPublish();
+  };
+
+  const handleShare = async () => {
+    if (!pod?.id) return;
+    const shareUrl = `${window.location.origin}/share/${pod.id}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "分享链接已复制",
+        description: "你可以将链接分享给其他人",
+      });
+    } catch (error) {
+      console.error("[SHARE]", error);
+      toast({
+        title: "复制链接失败",
+        description: "请手动复制链接",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!pod) return null;
@@ -147,6 +175,16 @@ const AudioPlayer = ({ pod, onPublish, isPublishing }: { pod: PlayerProps['pod']
         </div>
 
         <div className="flex items-center gap-2">
+          {pod.audioUrl && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={handleShare}
+            >
+              <Icons.share className="h-4 w-4" />
+            </Button>
+          )}
           {pod.audioUrl && (
             <Button
               variant={pod.status === "published" ? "ghost" : "default"}
@@ -179,10 +217,12 @@ const AudioPlayer = ({ pod, onPublish, isPublishing }: { pod: PlayerProps['pod']
             className="h-8 w-8 p-0"
             onClick={() => setIsCollapsed(!isCollapsed)}
           >
-            <Icons.chevronDown className={cn(
-              "h-4 w-4 transition-transform",
-              isCollapsed ? "-rotate-90" : ""
-            )} />
+            <Icons.chevronDown
+              className={cn(
+                "h-4 w-4 transition-transform",
+                isCollapsed ? "-rotate-90" : ""
+              )}
+            />
           </Button>
         </div>
       </div>

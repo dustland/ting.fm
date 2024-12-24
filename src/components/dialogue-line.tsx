@@ -63,7 +63,7 @@ export function DialogueLine({
         body: JSON.stringify({
           text,
           host: dialogue.host,
-          seetings: podcastSettings,
+          settings: podcastSettings,
         }),
       });
 

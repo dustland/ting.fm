@@ -1,5 +1,3 @@
-'use server';
-
 import { ArxivService, ArxivPaper } from './arxiv';
 import { createClient } from './supabase/server';
 

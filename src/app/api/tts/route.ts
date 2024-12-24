@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { bufferToFile, uploadFile } from "@/lib/supabase/client";
+import { bufferToFile, uploadFile } from "@/lib/supabase/server";
 import { nanoid } from "nanoid";
 import { PodcastHost } from "@/store/setting";
 

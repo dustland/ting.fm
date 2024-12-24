@@ -68,3 +68,58 @@ export async function getUser(): Promise<User | null> {
   }
   return user;
 }
+
+export interface Attachment {
+  url: string;
+  contentType: string;
+  name: string;
+}
+
+export async function bufferToFile(buffer: Buffer, filename: string, mimetype: string): Promise<File> {
+  return new File([buffer], filename, { type: mimetype });
+}
+
+export async function uploadFile(file: File, bucket = "audio"): Promise<Attachment> {
+  // Validate file size (10MB limit)
+  const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+  if (file.size > MAX_SIZE) {
+    throw new Error(
+      `File size exceeds 10MB limit. Current size: ${(
+        file.size /
+        1024 /
+        1024
+      ).toFixed(2)}MB`
+    );
+  }
+
+  const path = `${Date.now()}-${file.name}`;
+
+  try {
+    console.log("Starting file upload...", path, file);
+    const supabase = await createServiceClient();
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (error) {
+      console.error("Upload error:", error);
+      throw error;
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(bucket).getPublicUrl(path);
+
+    return {
+      url: publicUrl,
+      contentType: file.type,
+      name: file.name,
+    };
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    throw error;
+  }
+}

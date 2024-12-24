@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PaperMonitor } from '@/lib/paper-monitor';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from "@/lib/supabase/server";
 
 const paperMonitor = new PaperMonitor();
 
@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   try {
     const { topic, query } = await req.json();
 
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase
       .from("monitored_topics")
       .insert({

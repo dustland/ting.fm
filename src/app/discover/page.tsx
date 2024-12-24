@@ -49,7 +49,6 @@ export default function DiscoverPage() {
             <Card
               key={pod.id}
               className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
-              onClick={() => handleCardClick(pod)}
             >
               <div className="flex items-start gap-4">
                 <div className="shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -63,11 +62,6 @@ export default function DiscoverPage() {
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center gap-2">
                     <h2 className="font-medium truncate">{pod.title}</h2>
-                    {pod.status === "published" && (
-                      <Badge variant="secondary" className="shrink-0">
-                        已发布
-                      </Badge>
-                    )}
                   </div>
 
                   {pod.source?.metadata?.summary && (

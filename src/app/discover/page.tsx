@@ -13,10 +13,19 @@ import { zhCN } from "date-fns/locale";
 export default function DiscoverPage() {
   const router = useRouter();
   const { pods, isLoading } = useDiscoverPods();
-  const { currentPod, setCurrentPod } = usePlayerStore();
+  const { currentPod, setCurrentPod, play, pause, isPlaying } =
+    usePlayerStore();
 
   const handleCardClick = (pod: any) => {
     router.push(`/pods/${pod.id}`);
+  };
+
+  const handlePlayPause = () => {
+    if (isPlaying) {
+      pause();
+    } else {
+      play();
+    }
   };
 
   return (
@@ -99,19 +108,14 @@ export default function DiscoverPage() {
                     className="shrink-0 mt-1"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setCurrentPod({
-                        id: pod.id,
-                        title: pod.title,
-                        audioUrl: pod.audioUrl,
-                        status: pod.status,
-                        summary: pod.source?.metadata?.summary,
-                      });
+                      setCurrentPod(pod);
+                      handlePlayPause();
                     }}
                   >
-                    {currentPod?.id === pod.id ? (
-                      <Icons.music className="h-4 w-4" />
+                    {currentPod?.id === pod.id && isPlaying ? (
+                      <Icons.pause className="h-4 w-4" />
                     ) : (
-                      <Icons.podcast className="h-4 w-4" />
+                      <Icons.play className="h-4 w-4" />
                     )}
                   </Button>
                 )}

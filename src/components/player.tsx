@@ -11,21 +11,17 @@ interface PlayerProps {
 
 export function FloatingPlayer({ pod }: PlayerProps) {
   const pathname = usePathname();
-  const { currentPod, isVisible, hide } = usePlayerStore();
-  const isPodDetailPage = pathname.startsWith("/pods/");
+  const { isPlaying, hide } = usePlayerStore();
   const isSharePage = pathname.startsWith("/share/");
 
-  // Don't show on pod detail pages or share pages
-  if (isPodDetailPage || isSharePage) return null;
-
-  // Don't show if not visible
-  if (!isVisible) return null;
-
   // Don't show if no pod data
-  if (!pod && !currentPod) return null;
+  if (!pod?.audioUrl) return null;
 
-  const activePod = pod || currentPod;
-  if (!activePod?.audioUrl) return null;
+  // Don't show if not playing
+  if (!isPlaying) return null;
 
-  return <PodPlayer pod={activePod} variant="floating" onClose={hide} />;
+  // Don't show on pod detail pages or share pages
+  if (isSharePage) return null;
+
+  return <PodPlayer pod={pod} variant="floating" onClose={hide} />;
 }

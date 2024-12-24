@@ -7,30 +7,31 @@ import { Pod } from "@/store/pod";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
+import { usePlayerStore } from "@/store/player";
 
 interface PodPlayerProps {
   pod: Pod;
   variant?: "floating" | "inline";
-  onClose?: () => void;
 }
 
-export function PodPlayer({ pod, variant = "inline", onClose }: PodPlayerProps) {
-  const [isPlaying, setIsPlaying] = useState(false);
+export function PodPlayer({ pod, variant = "inline" }: PodPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const { isPlaying, play, pause } = usePlayerStore();
 
   const handlePlayPause = () => {
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
+        pause();
       } else {
         audioRef.current.play().catch(() => {
-          setIsPlaying(false);
+          pause();
         });
+        play();
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
@@ -67,6 +68,24 @@ export function PodPlayer({ pod, variant = "inline", onClose }: PodPlayerProps) 
     });
   };
 
+  // Sync audio element with isPlaying state
+  useEffect(() => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.play().catch(() => {
+          pause();
+        });
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [isPlaying, pause]);
+
+  // Handle audio end
+  const handleEnded = () => {
+    pause();
+  };
+
   const playerContent = (
     <div className="space-y-4">
       {/* Header: Title and Controls */}
@@ -76,9 +95,7 @@ export function PodPlayer({ pod, variant = "inline", onClose }: PodPlayerProps) 
             <Icons.logo className="h-8 w-8" />
           </div>
           <div className="flex flex-col min-w-0 flex-1">
-            <div className="text-sm font-medium truncate">
-              {pod.title}
-            </div>
+            <div className="text-sm font-medium truncate">{pod.title}</div>
           </div>
         </div>
 
@@ -102,20 +119,18 @@ export function PodPlayer({ pod, variant = "inline", onClose }: PodPlayerProps) 
                 <Icons.chevronDown
                   className={cn(
                     "h-4 w-4 transition-transform",
-                    isCollapsed ? "-rotate-90" : ""
+                    isCollapsed ? "-rotate-180" : ""
                   )}
                 />
               </Button>
-              {onClose && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={onClose}
-                >
-                  <Icons.x className="h-4 w-4" />
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={handlePlayPause}
+              >
+                <Icons.x className="h-4 w-4" />
+              </Button>
             </>
           )}
         </div>
@@ -129,7 +144,7 @@ export function PodPlayer({ pod, variant = "inline", onClose }: PodPlayerProps) 
             src={pod.audioUrl}
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
-            onEnded={() => setIsPlaying(false)}
+            onEnded={handleEnded}
           />
           <Button
             variant="ghost"
@@ -173,5 +188,7 @@ export function PodPlayer({ pod, variant = "inline", onClose }: PodPlayerProps) 
     );
   }
 
-  return <div className="bg-background border rounded-lg p-4">{playerContent}</div>;
+  return (
+    <div className="bg-background border rounded-lg p-4">{playerContent}</div>
+  );
 }

@@ -1,22 +1,15 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { usePlayerStore } from "@/store/player";
 import { FloatingPlayer } from "@/components/player";
 
-export function PlayerProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const pathname = usePathname();
-  const { currentPod } = usePlayerStore();
-  const isPodDetailPage = pathname.startsWith("/pods/");
+export function PlayerProvider({ children }: { children: React.ReactNode }) {
+  const { currentPod, isPlaying } = usePlayerStore();
 
   return (
     <>
       {children}
-      {currentPod && <FloatingPlayer pod={currentPod} />}
+      {currentPod && isPlaying && <FloatingPlayer pod={currentPod} />}
     </>
   );
 }

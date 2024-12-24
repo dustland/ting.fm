@@ -1,6 +1,6 @@
 [build]
-builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+builder = "nixpacks"
+buildCommand = "apt-get update && apt-get install -y chromium && pnpm install && pnpm run build"
 
 [deploy]
 startCommand = "pnpm start"
@@ -10,4 +10,5 @@ restartPolicyType = "on_failure"
 
 [variables]
 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
+PLAYWRIGHT_BROWSERS_PATH = "/usr/bin/chromium"
 NEXT_TELEMETRY_DISABLED = "1"

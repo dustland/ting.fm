@@ -1,5 +1,7 @@
+'use server';
+
 import { ArxivService, ArxivPaper } from './arxiv';
-import { createClient } from './supabase/client';
+import { createClient } from './supabase/server';
 
 export interface MonitoredTopic {
   id: string;
@@ -10,18 +12,22 @@ export interface MonitoredTopic {
 
 export class PaperMonitor {
   private arxivService: ArxivService;
-  private supabase = createClient();
 
   constructor() {
     this.arxivService = new ArxivService();
   }
 
+  private async getSupabase() {
+    return await createClient();
+  }
+
   async monitorTopic(topic: MonitoredTopic): Promise<ArxivPaper[]> {
     try {
       const papers = await this.arxivService.searchPapers(topic.query);
+      const supabase = await this.getSupabase();
       
       // Store papers in database
-      const { error } = await this.supabase
+      const { error } = await supabase
         .from('papers')
         .upsert(
           papers.map(paper => ({
@@ -39,7 +45,7 @@ export class PaperMonitor {
       if (error) throw error;
 
       // Update last checked timestamp
-      await this.supabase
+      await supabase
         .from('monitored_topics')
         .update({ last_checked: new Date().toISOString() })
         .eq('id', topic.id);
@@ -52,7 +58,8 @@ export class PaperMonitor {
   }
 
   async getTopPapers(topicId: string, limit: number = 10): Promise<any[]> {
-    const { data, error } = await this.supabase
+    const supabase = await this.getSupabase();
+    const { data, error } = await supabase
       .from('papers')
       .select('*')
       .eq('topic_id', topicId)

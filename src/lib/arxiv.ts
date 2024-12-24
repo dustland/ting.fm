@@ -19,7 +19,7 @@ interface PdfResponse {
 
 export class ArxivService {
   private parser: XMLParser;
-  private baseUrl = "http://export.arxiv.org/api/query";
+  private baseUrl = "https://export.arxiv.org/api/query";
 
   constructor() {
     this.parser = new XMLParser({

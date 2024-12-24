@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { bufferToFile, uploadFile } from "@/lib/supabase/server";
+import { uploadBuffer } from "@/lib/supabase/server";
 import { nanoid } from "nanoid";
 import { PodcastHost } from "@/store/setting";
 
@@ -53,10 +53,6 @@ export async function POST(request: Request) {
     let audioBuffer: ArrayBuffer;
     const ttsModel = settings?.ttsModel || "openai";
 
-    // const voice = settings.hosts.find(
-    //   (h: PodcastHost) => h.id === host.id
-    // )?.voice;
-
     // Simplified voice mapping
     const voice = host === "奥德彪" ? "onyx" : "nova";
 
@@ -82,8 +78,7 @@ export async function POST(request: Request) {
 
     const buffer = Buffer.from(audioBuffer);
     const filename = `${nanoid()}.mp3`;
-    const file = await bufferToFile(buffer, filename, "audio/mpeg");
-    const { url } = await uploadFile(file, "audio");
+    const { url } = await uploadBuffer(buffer, filename, "audio/mpeg");
 
     if (!url) {
       console.error("[TTS] Upload error:", url);

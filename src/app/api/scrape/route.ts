@@ -1,120 +1,41 @@
 import { NextRequest } from "next/server";
-import { chromium } from "playwright";
-import { Readability } from "@mozilla/readability";
-import { JSDOM } from "jsdom";
-import getMetaData from "metadata-scraper";
+import FirecrawlApp from "@mendable/firecrawl-js";
 import { Pod, PodSource } from "@/store/pod";
 import { nanoid } from "nanoid";
+
+if (!process.env.FIRECRAWL_API_KEY) {
+  throw new Error("FIRECRAWL_API_KEY is not set");
+}
+
+const app = new FirecrawlApp({
+  apiKey: process.env.FIRECRAWL_API_KEY,
+});
 
 export interface CrawlRequest {
   url: string;
 }
 
-interface ExtractedContent {
-  title: string;
-  content: string;
-  textContent: string;
-  length: number;
-  excerpt: string;
-  byline: string | null;
-  dir: string;
-  siteName: string | null;
-  lang: string;
-}
-
-async function extractContent(url: string): Promise<ExtractedContent> {
-  const browser = await chromium.launch({
-    headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--disable-gpu',
-      '--no-first-run',
-    ]
-  });
-
-  try {
-    // Create a new context and page with more realistic browser settings
-    const context = await browser.newContext({
-      userAgent:
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      viewport: { width: 1280, height: 800 },
-      extraHTTPHeaders: {
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Accept-Encoding": "gzip, deflate, br",
-        DNT: "1",
-        Connection: "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-        Pragma: "no-cache",
-        "Cache-Control": "no-cache",
-      },
-    });
-
-    const page = await context.newPage();
-
-    // Add request interception for better error handling
-    page.on("response", (response) => {
-      if (response.status() === 403) {
-        throw new Error(
-          "Access denied by the website. The site might be blocking automated access."
-        );
-      }
-    });
-
-    // Navigate to the URL with timeout and wait until network is idle
-    await page.goto(url, {
-      timeout: 30000,
-      waitUntil: "networkidle",
-    });
-
-    // Random delay to appear more human-like
-    await page.waitForTimeout(Math.random() * 1000 + 1000);
-
-    // Wait for the content to load
-    await page.waitForLoadState("domcontentloaded");
-
-    // Scroll to bottom gradually to trigger lazy loading
-    await page.evaluate(async () => {
-      await new Promise((resolve) => {
-        let totalHeight = 0;
-        const distance = 100;
-        const timer = setInterval(() => {
-          const scrollHeight = document.body.scrollHeight;
-          window.scrollBy(0, distance);
-          totalHeight += distance;
-
-          if (totalHeight >= scrollHeight) {
-            clearInterval(timer);
-            resolve(true);
-          }
-        }, 100);
-      });
-    });
-
-    await page.waitForTimeout(2000); // Wait for any lazy-loaded content
-
-    const html = await page.content();
-
-    const dom = new JSDOM(html, { url });
-    const reader = new Readability(dom.window.document);
-    const article = reader.parse();
-
-    if (!article) {
-      throw new Error("Failed to extract content from URL");
-    }
-
-    return article;
-  } finally {
-    await browser.close();
-  }
+interface FirecrawlResponse {
+  success: boolean;
+  data: {
+    markdown: string;
+    html: string;
+    metadata: {
+      title: string;
+      description: string;
+      language: string;
+      keywords: string;
+      robots: string;
+      ogTitle: string;
+      ogDescription: string;
+      ogUrl: string;
+      ogImage: string;
+      ogLocaleAlternate: string[];
+      ogSiteName: string;
+      sourceURL: string;
+      statusCode: number;
+    };
+  }[];
 }
 
 function estimateReadingTime(wordCount: number): number {
@@ -149,58 +70,55 @@ export async function POST(req: NextRequest) {
     const { url } = (await req.json()) as CrawlRequest;
     const parsedUrl = new URL(url);
 
-    // Get metadata using metadata-scraper
-    const metadata = await getMetaData(url);
+    const crawlResponse = await app.crawlUrl(url, {
+      limit: 100,
+      scrapeOptions: {
+        formats: ["markdown", "html"],
+      },
+    });
 
-    // Extract content using Playwright and Readability
-    const article = await extractContent(url);
+    if (!crawlResponse.success) {
+      throw new Error(`Failed to crawl: ${crawlResponse.error}`);
+    }
 
-    // Calculate word count and reading time
-    const wordCount = countWords(article.textContent);
+    // Ensure we have at least one document
+    if (!crawlResponse.data || crawlResponse.data.length === 0) {
+      throw new Error("No content found from the URL");
+    }
+
+    // Take the first document from the crawl results
+    const firstDoc = crawlResponse.data[0];
+    const markdown = firstDoc.markdown || "";
+    const html = firstDoc.html || "";
+    const metadata = firstDoc.metadata || {};
+
+    const wordCount = countWords(markdown);
     const readingTime = estimateReadingTime(wordCount);
-    const title = article.title || metadata.title || "未知标题";
 
     const response: Pod = {
       id: nanoid(),
-      title,
+      title: metadata.ogTitle || metadata.title || "未知标题",
       dialogues: [],
       source: {
         type: "url",
         metadata: {
-          title,
-          description: article.excerpt || metadata.description || "无描述",
-          authors: metadata.author
-            ? Array.isArray(metadata.author)
-              ? metadata.author
-              : [metadata.author]
-            : [article.byline || ""],
-          createdAt: metadata.published
-            ? Array.isArray(metadata.published)
-              ? metadata.published[0]
-              : metadata.published
-            : undefined,
+          title: metadata.ogTitle || metadata.title || "未知标题",
+          description: metadata.ogDescription || metadata.description || "无描述",
+          authors: [],
           url,
-          siteName: (
-            article.siteName ||
-            metadata.publisher ||
-            parsedUrl.hostname
-          )?.toString(),
-          favicon: metadata.icon || `https://${parsedUrl.hostname}/favicon.ico`,
-          image: metadata.image,
+          siteName: metadata.ogSiteName || parsedUrl.hostname,
+          favicon: `https://${parsedUrl.hostname}/favicon.ico`,
+          image: metadata.ogImage,
           readingTime,
           wordCount,
         },
-        content: article.textContent
+        content: markdown
           .replace(/\u0000/g, "") // Remove null characters
           .split("\n")
           .filter((line) => line.trim())
           .join("\n"),
       },
-      createdAt: metadata.published
-        ? Array.isArray(metadata.published)
-          ? metadata.published[0]
-          : metadata.published
-        : new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       status: "draft",
     };
 

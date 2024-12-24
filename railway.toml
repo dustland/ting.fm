@@ -1,17 +1,5 @@
 [build]
 builder = "nixpacks"
-buildCommand = ""
 
 [deploy]
 startCommand = "pnpm start"
-healthcheckPath = "/"
-healthcheckTimeout = 100
-restartPolicyType = "on_failure"
-
-[variables]
-PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
-PLAYWRIGHT_BROWSERS_PATH = "/usr/bin/chromium"
-NEXT_TELEMETRY_DISABLED = "1"
-
-[phases.setup]
-nixPkgs = ["chromium"]

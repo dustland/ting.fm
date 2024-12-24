@@ -9,7 +9,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  serverExternalPackages: ["@mozilla/readability", "jsdom", "playwright-core"],
 };
 
 export default nextConfig;

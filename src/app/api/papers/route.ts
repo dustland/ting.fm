@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { PaperMonitor } from '@/lib/paper-monitor';
+import { monitorTopic, getTopPapers } from '@/lib/paper-monitor';
 import { createClient } from "@/lib/supabase/server";
-
-const paperMonitor = new PaperMonitor();
 
 export async function POST(req: Request) {
   try {
@@ -22,7 +20,7 @@ export async function POST(req: Request) {
     if (error) throw error;
 
     // Start monitoring immediately
-    await paperMonitor.monitorTopic({
+    await monitorTopic({
       id: data.id,
       name: data.name,
       query: data.query,
@@ -48,10 +46,13 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Topic ID is required' }, { status: 400 });
     }
 
-    const papers = await paperMonitor.getTopPapers(topicId);
-    return NextResponse.json({ success: true, papers });
+    const papers = await getTopPapers(topicId);
+    return NextResponse.json(papers);
   } catch (error) {
     console.error('Error fetching papers:', error);
-    return NextResponse.json({ error: 'Failed to fetch papers' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch papers' },
+      { status: 500 }
+    );
   }
 }

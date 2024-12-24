@@ -42,8 +42,8 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-10 items-center justify-between px-2">
+    <header className="sticky top-0 z-50 w-full border-b before:absolute before:inset-0 before:bg-background/95 before:-z-10 before:backdrop-blur supports-[backdrop-filter]:before:bg-background/60">
+      <div className="container relative flex h-10 items-center justify-between px-2">
         {/* Logo and Desktop Navigation */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center space-x-2">

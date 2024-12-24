@@ -43,12 +43,12 @@ export function AuthButton() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="relative h-8 w-8 rounded-full"
-        >
+        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={user.user_metadata.avatar_url} alt={user.user_metadata.full_name} />
+            <AvatarImage
+              src={user.user_metadata.avatar_url}
+              alt={user.user_metadata.full_name}
+            />
             <AvatarFallback>
               {user.user_metadata.full_name?.[0]?.toUpperCase() || "U"}
             </AvatarFallback>
@@ -80,7 +80,7 @@ export function AuthButton() {
           <ThemeSwitch />
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut()} className="text-red-600">
+        <DropdownMenuItem onClick={() => signOut()}>
           <Icons.logout className="h-4 w-4 mr-2" />
           退出登录
         </DropdownMenuItem>

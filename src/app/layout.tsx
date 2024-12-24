@@ -3,8 +3,8 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Navbar } from "@/components/navbar"
 import { Toaster } from "@/components/ui/toaster"
-import { FloatingPlayer } from "@/components/player"; // Added import statement
-import { cn } from "@/lib/utils"; // Added import statement
+import { FloatingPlayer } from "@/components/player";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Ting.fm - Podcast AI",
@@ -18,16 +18,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh" suppressHydrationWarning>
-      <body className={cn("min-h-screen bg-background font-sans antialiased")}>
+      <body className={cn("min-h-screen bg-background")}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <div className="relative flex min-h-screen flex-col">
+          <div className="relative isolate flex h-screen flex-col">
             <Navbar />
-            <main className="flex-1">{children}</main>
+            <div className="relative flex-1 overflow-hidden">
+              <div className="absolute inset-0 overflow-y-auto">
+                <main className="min-h-full">{children}</main>
+              </div>
+            </div>
           </div>
           <FloatingPlayer />
           <Toaster />

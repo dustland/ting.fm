@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(audioBuffer);
     const filename = `${nanoid()}.mp3`;
     const file = await bufferToFile(buffer, filename, "audio/mpeg");
-    const { url } = await uploadFile(file, filename);
+    const { url } = await uploadFile(file, "audio");
 
     if (!url) {
       console.error("[TTS] Upload error:", url);

@@ -2,3 +2,10 @@
 .branches
 .temp
 .env
+
+# Deno
+.deno/
+deno.lock
+
+# Build output
+dist/

@@ -2,15 +2,15 @@ import { NextResponse } from 'next/server';
 import { PaperMonitor } from '@/lib/paper-monitor';
 import { createClient } from '@/lib/supabase/client';
 
-const supabase = createClient();
 const paperMonitor = new PaperMonitor();
 
 export async function POST(req: Request) {
   try {
     const { topic, query } = await req.json();
 
+    const supabase = createClient();
     const { data, error } = await supabase
-      .from('monitored_topics')
+      .from("monitored_topics")
       .insert({
         name: topic,
         query: query,
@@ -31,8 +31,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error creating topic:', error);
-    return NextResponse.json({ error: 'Failed to create topic' }, { status: 500 });
+    console.error("Error creating topic:", error);
+    return NextResponse.json(
+      { error: "Failed to create topic" },
+      { status: 500 }
+    );
   }
 }
 

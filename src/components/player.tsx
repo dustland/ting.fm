@@ -7,11 +7,25 @@ import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 
-export function FloatingPlayer() {
+interface PlayerProps {
+  pod?: {
+    id: string;
+    title: string;
+    audioUrl: string;
+  };
+}
+
+export function FloatingPlayer({ pod }: PlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const { currentPod, isPlaying, play, pause, toggle, setCurrentPod } = usePlayerStore();
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+
+  useEffect(() => {
+    if (pod) {
+      setCurrentPod(pod);
+    }
+  }, [pod, setCurrentPod]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -55,7 +69,7 @@ export function FloatingPlayer() {
     }
   };
 
-  if (!currentPod) return null;
+  if (!currentPod?.audioUrl) return null;
 
   return (
     <div className={cn(
@@ -85,7 +99,7 @@ export function FloatingPlayer() {
           <Slider
             value={[currentTime]}
             min={0}
-            max={duration || 100}
+            max={duration}
             step={1}
             onValueChange={handleSeek}
             className="flex-1"

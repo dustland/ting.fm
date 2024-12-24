@@ -13,6 +13,7 @@ import { useSettingStore } from "@/store/setting";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { FloatingPlayer } from "@/components/player";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -31,6 +32,7 @@ export default function PodPage({ params }: Props) {
     append,
     isLoading: isGeneratingDialogues,
     dialogues,
+    stop,
   } = usePodChat({
     podId: id,
     options: podcastSettings,
@@ -262,6 +264,11 @@ export default function PodPage({ params }: Props) {
     }
   };
 
+  const handleStopGenerating = () => {
+    stop();
+    setIsGeneratingPodcast(false);
+  };
+
   const getSourceTypeIcon = (type: string) => {
     switch (type) {
       case "url":
@@ -331,10 +338,8 @@ export default function PodPage({ params }: Props) {
 
             {pod?.audioUrl && (
               <div className="flex items-center gap-2 ml-auto order-last w-full sm:w-auto mt-2 sm:mt-0">
-                <audio
-                  controls
-                  src={pod.audioUrl}
-                  className="h-8 w-full sm:w-[240px]"
+                <FloatingPlayer
+                  pod={{ id: pod.id, title: pod.title, audioUrl: pod.audioUrl }}
                 />
                 <Button
                   variant="ghost"
@@ -358,40 +363,42 @@ export default function PodPage({ params }: Props) {
           {/* Actions */}
           <div className="flex flex-wrap items-center gap-2">
             <Button
-              variant="outline"
-              size="sm"
-              className="h-8"
               onClick={() => handleGenerateDialogues()}
-              disabled={isGeneratingDialogues || !!dialogues?.length}
+              variant={dialogues?.length ? "outline" : "default"}
+              disabled={isGeneratingDialogues}
+              className="flex items-center gap-2"
             >
               {isGeneratingDialogues ? (
                 <>
-                  <Icons.spinner className="h-3 w-3 animate-spin" />
+                  <Icons.spinner className="h-4 w-4 animate-spin" />
                   <span>生成剧本中...</span>
+                </>
+              ) : dialogues?.length ? (
+                <>
+                  <Icons.wand className="h-4 w-4" />
+                  <span>重新生成剧本</span>
                 </>
               ) : (
                 <>
-                  <Icons.wand className="h-3 w-3" />
+                  <Icons.wand className="h-4 w-4" />
                   <span>生成剧本</span>
                 </>
               )}
             </Button>
 
             <Button
-              variant="outline"
-              size="sm"
-              className="h-8"
               onClick={() => handleGeneratePodcast()}
               disabled={isGeneratingPodcast || !dialogues?.length}
+              className="flex items-center gap-2"
             >
               {isGeneratingPodcast ? (
                 <>
-                  <Icons.spinner className="h-3 w-3 animate-spin" />
+                  <Icons.spinner className="h-4 w-4 animate-spin" />
                   <span>生成播客中...</span>
                 </>
               ) : (
                 <>
-                  <Icons.podcast className="h-3 w-3" />
+                  <Icons.podcast className="h-4 w-4" />
                   <span>生成播客</span>
                 </>
               )}
@@ -428,7 +435,7 @@ export default function PodPage({ params }: Props) {
           defaultValue="source"
           className="flex-1 flex flex-col min-h-0 mt-3 sm:mt-6"
         >
-          <TabsList className="flex-none grid w-full grid-cols-3">
+          <TabsList className="flex-none grid w-full grid-cols-3 p-0.5">
             <TabsTrigger
               value="source"
               className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
@@ -446,7 +453,7 @@ export default function PodPage({ params }: Props) {
             <TabsTrigger
               value="podcast"
               className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
-              disabled={!pod?.audioUrl}
+              disabled={!dialogues?.length}
             >
               <Icons.headphones className="h-3 w-3 sm:h-4 sm:w-4" />
               播客
@@ -582,16 +589,20 @@ export default function PodPage({ params }: Props) {
 
           <TabsContent value="dialogues" className="flex-1 min-h-0">
             <Card className="h-full">
-              <CardContent className="p-0 h-full">
+              <CardContent className="relative p-0 h-full">
                 <ScrollArea className="h-full">
                   <div className="p-4 space-y-4">
                     {!dialogues?.length ? (
-                      <div className="flex flex-col items-center justify-center w-full h-full text-center py-8 gap-4 text-muted-foreground">
-                        <Icons.podcast className="mx-auto h-12 w-12 opacity-50" />
-                        <p>根据原文内容生成播客剧本</p>
+                      <div className="flex flex-col items-center justify-center min-h-[400px] py-8 gap-6">
+                        <div className="flex flex-col items-center gap-4">
+                          <Icons.podcast className="h-16 w-16 text-muted-foreground" />
+                          <p className="text-lg text-muted-foreground">
+                            根据原文内容生成播客剧本
+                          </p>
+                        </div>
                         <Button
                           onClick={handleGenerateDialogues}
-                          className="flex items-center gap-2"
+                          className="gap-2"
                         >
                           {isGeneratingDialogues ? (
                             <>
@@ -606,10 +617,6 @@ export default function PodPage({ params }: Props) {
                           )}
                         </Button>
                       </div>
-                    ) : isGeneratingDialogues ? (
-                      <div className="flex items-center justify-center p-8">
-                        <Icons.spinner className="w-6 h-6 animate-spin" />
-                      </div>
                     ) : (
                       dialogues?.map((dialogue) => (
                         <DialogueLine
@@ -622,6 +629,18 @@ export default function PodPage({ params }: Props) {
                   </div>
                   <div ref={dialoguesEndRef} />
                 </ScrollArea>
+                {isGeneratingDialogues && (
+                  <div className="absolute top-2 right-2">
+                    <Button
+                      variant="destructive"
+                      onClick={handleStopGenerating}
+                      className="flex items-center gap-2"
+                    >
+                      <Icons.stop className="h-4 w-4 animate-spin" />
+                      <span>停止生成</span>
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -655,23 +674,15 @@ export default function PodPage({ params }: Props) {
                             )}
                           </div>
                         </div>
-                        <Button variant="ghost" size="icon" asChild>
-                          <a
-                            href={pod?.audioUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="下载音频"
-                          >
-                            <Icons.download className="h-4 w-4" />
-                          </a>
-                        </Button>
                       </div>
 
                       <div className="bg-muted/50 rounded-lg p-3">
-                        <audio
-                          controls
-                          src={pod?.audioUrl}
-                          className="w-full"
+                        <FloatingPlayer
+                          pod={{
+                            id: pod.id,
+                            title: pod.title,
+                            audioUrl: pod.audioUrl,
+                          }}
                         />
                       </div>
                     </div>

@@ -113,7 +113,6 @@ export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
 
     // Only update if dialogues have actually changed
     if (isDialoguesChanged(newDialogues)) {
-      console.log("dialogues changed", dialogues, newDialogues);
       // Always update local state for smooth UI updates
       setDialogues(newDialogues);
 

@@ -53,7 +53,7 @@ export default function DiscoverPage() {
               <div className="flex items-start gap-4">
                 <div className="shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
                   {pod.source?.type === "paper" ? (
-                    <Icons.sparkles className="h-6 w-6 text-primary" />
+                    <Icons.arxiv className="h-6 w-6 text-primary" />
                   ) : (
                     <Icons.text className="h-6 w-6 text-primary" />
                   )}

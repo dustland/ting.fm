@@ -262,17 +262,17 @@ export function PodActions({ pod }: PodActionsProps) {
           variant="default"
           size="sm"
           onClick={handleGenerate}
-          disabled={isGenerating}
+          disabled={isGenerating || pod.dialogues?.length === 0}
         >
           {isGenerating ? (
             <>
               <Icons.spinner className="h-3.5 w-3.5 animate-spin mr-2" />
-              生成中...
+              正在生成播客...
             </>
           ) : (
             <>
               <Icons.wand className="h-3.5 w-3.5 mr-2" />
-              生成
+              生成播客
             </>
           )}
         </Button>
@@ -307,17 +307,17 @@ export function PodActions({ pod }: PodActionsProps) {
           variant="outline"
           size="sm"
           onClick={handleGenerate}
-          disabled={isGenerating}
+          disabled={isGenerating || pod.dialogues?.length === 0}
         >
           {isGenerating ? (
             <>
               <Icons.spinner className="h-3.5 w-3.5 animate-spin mr-2" />
-              生成中...
+              正在生成播客...
             </>
           ) : (
             <>
               <Icons.refresh className="h-3.5 w-3.5 mr-2" />
-              重新生成
+              重新生成播客
             </>
           )}
         </Button>

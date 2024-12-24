@@ -151,7 +151,12 @@ export function DialogueLine({ dialogue, className, onEdit }: DialogueLineProps)
                 ) : ttsState.isPlaying ? (
                   <Icons.pause className="h-3.5 w-3.5" />
                 ) : (
-                  <Icons.play className="h-3.5 w-3.5" />
+                  <Icons.play
+                    className={cn(
+                      "h-3.5 w-3.5",
+                      dialogue.audioUrl && "text-green-500"
+                    )}
+                  />
                 )}
               </Button>
               {onEdit && (

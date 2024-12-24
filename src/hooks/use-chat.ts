@@ -16,6 +16,8 @@ export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
   const { toast } = useToast();
   const [dialogues, setDialogues] = useState<Dialogue[]>([]);
   const podRef = useRef(pod);
+  const [lastUpdateTime, setLastUpdateTime] = useState(0);
+  const updateDebounceMs = 2000; // 2 seconds debounce
 
   // Keep latest pod reference without triggering effect
   useEffect(() => {
@@ -28,6 +30,31 @@ export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
     body: {
       format: "podcast",
       podcastOptions: options,
+    },
+    onFinish: (message) => {
+      const content = message.content.trim();
+      if (!content) return;
+
+      const newDialogues = processDialogues(content);
+      if (newDialogues.length === 0) {
+        toast({
+          title: "对话格式错误",
+          description: "AI 回复的内容未包含正确的对话格式，请重试",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("[Chat] Stream finished, updating pod with dialogues:", newDialogues);
+      
+      if (podRef.current) {
+        updatePod({
+          ...podRef.current,
+          dialogues: newDialogues,
+          status: "ready",
+          updatedAt: new Date().toISOString(),
+        });
+      }
     },
     onError: (error) => {
       console.error("[Chat] Error:", error);
@@ -91,7 +118,7 @@ export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
     }
   }, [pod?.dialogues]);
 
-  // Handle chat message updates
+  // Handle chat message updates for UI only
   useEffect(() => {
     const lastMessage = chat.messages[chat.messages.length - 1];
     if (!lastMessage || lastMessage.role !== "assistant") return;
@@ -100,41 +127,13 @@ export function usePodChat({ podId, options, onError }: UsePodChatOptions) {
     if (!content) return;
 
     const newDialogues = processDialogues(content);
-    if (newDialogues.length === 0) {
-      if (!chat.isLoading) {
-        toast({
-          title: "对话格式错误",
-          description: "AI 回复的内容未包含正确的对话格式，请重试",
-          variant: "destructive",
-        });
-      }
-      return;
-    }
+    if (newDialogues.length === 0) return;
 
-    // Only update if dialogues have actually changed
+    // Only update local state for UI
     if (isDialoguesChanged(newDialogues)) {
-      // Always update local state for smooth UI updates
       setDialogues(newDialogues);
-
-      // Only update backend when streaming is done
-      if (!chat.isLoading && podRef.current) {
-        // Update pod with new dialogues and status
-        updatePod({
-          ...podRef.current,
-          dialogues: newDialogues,
-          status: "ready",
-          updatedAt: new Date().toISOString(),
-        });
-      }
     }
-  }, [
-    chat.messages,
-    chat.isLoading,
-    processDialogues,
-    isDialoguesChanged,
-    updatePod,
-    toast,
-  ]);
+  }, [chat.messages, processDialogues, isDialoguesChanged]);
 
   return {
     ...chat,

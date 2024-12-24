@@ -101,37 +101,47 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const body = await req.json();
+    const pod = await req.json();
     const supabase = await createClient();
     const user = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const { data: pod, error } = await supabase
+    // Convert camelCase to snake_case and add timestamps
+    const dbPod = {
+      title: pod.title,
+      source: pod.source,
+      dialogues: pod.dialogues || [],
+      audio_url: pod.audioUrl,
+      created_at: pod.createdAt,
+      updated_at: new Date().toISOString(),
+      status: pod.status || "draft",
+      user_id: user.id,
+    };
+    const { data, error } = await supabase
       .from("pods")
-      .update(body)
+      .update(dbPod)
       .eq("id", id)
       .eq("user_id", user.id)
       .select()
       .single();
 
     if (error) throw error;
-    if (!pod) {
+    if (!data) {
       return NextResponse.json({ error: "Pod not found" }, { status: 404 });
     }
 
     // Convert snake_case to camelCase
     const formattedPod = {
-      id: pod.id,
-      title: pod.title,
-      source: pod.source,
-      dialogues: pod.dialogues || [],
-      audioUrl: pod.audio_url,
-      createdAt: pod.created_at,
-      updatedAt: pod.updated_at,
-      status: pod.status,
+      id: data.id,
+      title: data.title,
+      source: data.source,
+      dialogues: data.dialogues || [],
+      audioUrl: data.audio_url,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+      status: data.status,
     };
 
     return NextResponse.json(formattedPod);

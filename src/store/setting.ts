@@ -12,6 +12,10 @@ export interface PodcastSettings {
   duration: number;
   style: "conversational";
   hosts: PodcastHost[];
+  outputLanguage: string;
+  hostStyle: string;
+  llmModel: "gpt-4o" | "gpt-4" | "gpt-3.5-turbo";
+  ttsModel: "doubao" | "tongyi" | "openai" | "elevenlabs";
 }
 
 interface SettingState {
@@ -23,6 +27,10 @@ interface SettingState {
 const defaultPodcastSettings: PodcastSettings = {
   duration: 15,
   style: "conversational",
+  outputLanguage: "zh-CN",
+  hostStyle: "轻松对话",
+  llmModel: "gpt-4o",
+  ttsModel: "openai",
   hosts: [
     {
       id: "host1",

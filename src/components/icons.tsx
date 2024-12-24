@@ -49,6 +49,7 @@ import {
   ScrollText,
   Tag,
   Paperclip,
+  Undo2,
   Info,
   Monitor,
   LucideProps,
@@ -62,6 +63,7 @@ import {
   Rss,
   ChevronDown,
   RefreshCcw,
+  Settings2,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -190,4 +192,5 @@ export const Icons = {
   display: Monitor,
   publish: Share2,
   rss: Rss,
+  undo: Undo2,
 } as const;

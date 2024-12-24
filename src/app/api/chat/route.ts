@@ -34,8 +34,12 @@ export async function POST(req: Request) {
 
     // Define podcast script generation parameters
     const defaultPodcastOptions: PodcastSettings = {
-      duration: 3, // Default 3 minutes
+      duration: 3,
       style: "conversational",
+      outputLanguage: "zh-CN",
+      hostStyle: "轻松对话",
+      llmModel: "gpt-4o",
+      ttsModel: "openai",
       hosts: [
         {
           id: "host1",
@@ -60,16 +64,17 @@ export async function POST(req: Request) {
     if (format === "podcast") {
       // Generate the podcast script
       const requestBody = {
-        model: openai("gpt-4o"),
+        model: openai(finalPodcastOptions.llmModel),
         messages: [
           {
             role: "system",
-            content:
-              "You are a skilled podcast scriptwriter specializing in creating engaging and natural dialogues between hosts. Your task is to craft a 15-minute conversation between hosts, ensuring the dialogue is relaxed, friendly, and informative, resembling a casual chat between friends.",
+            content: `You are a skilled podcast scriptwriter specializing in creating engaging and natural dialogues between hosts. Your task is to craft a ${finalPodcastOptions.duration}-minute conversation between hosts, ensuring the dialogue is ${finalPodcastOptions.hostStyle}, and informative, resembling a casual chat between friends.`,
           },
           {
             role: "user",
-            content: `Please create a 3-minute podcast dialogue based on the following article:
+            content: `Please create a ${
+              finalPodcastOptions.duration
+            }-minute podcast dialogue based on the following article:
 
 ${content}
 
@@ -93,6 +98,7 @@ ${finalPodcastOptions.hosts
             }，今天我们来聊聊这个话题。
 
 **Dialogue Style:**
+- 主持风格：${finalPodcastOptions.hostStyle}
 - 对话要自然流畅，像朋友间的闲聊
 - 适当加入轻松的玩笑增添趣味
 - 以轻松的方式讨论话题，避免过于正式
@@ -121,7 +127,9 @@ ${finalPodcastOptions.hosts
 - 加入有趣的评论但不要过度搞笑
 - 始终保持温暖友好的语气
 
-请用中文输出对话内容。`,
+请用${
+              finalPodcastOptions.outputLanguage === "zh-CN" ? "中文" : "英文"
+            }输出对话内容。`,
           },
         ] as CoreMessage[],
         temperature: 0.7,

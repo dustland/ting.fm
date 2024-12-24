@@ -5,6 +5,7 @@ import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { usePod } from "@/hooks/use-pods";
+import { useSettingStore } from "@/store/setting";
 import { Dialogue, Pod } from "@/store/pod";
 
 interface PodActionsProps {
@@ -12,11 +13,12 @@ interface PodActionsProps {
 }
 
 export function PodActions({ pod }: PodActionsProps) {
+  const { toast } = useToast();
+  const { podcastSettings } = useSettingStore();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const { toast } = useToast();
   const { updatePod } = usePod(pod.id);
 
   useEffect(() => {
@@ -62,7 +64,8 @@ export function PodActions({ pod }: PodActionsProps) {
             },
             body: JSON.stringify({
               text: dialogue.content,
-              voice: dialogue.host === "奥德彪" ? "onyx" : "nova",
+              host: podcastSettings.hosts.find(h => h.name === dialogue.host),
+              ttsModel: podcastSettings.ttsModel,
             }),
             signal: controller.signal,
           });

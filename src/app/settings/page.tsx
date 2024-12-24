@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -11,276 +10,189 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-
-interface Character {
-  name: string;
-  title: string;
-  gender: "男性" | "女性";
-  voice?: string;
-}
-
-interface Settings {
-  outputLanguage: string;
-  hostStyle: string;
-  llmModel: string;
-  ttsModel: string;
-  characters: Character[];
-}
-
-const defaultSettings: Settings = {
-  outputLanguage: "zh",
-  hostStyle: "默认风格",
-  llmModel: "Qwen2.5 72B",
-  ttsModel: "Doubao TTS",
-  characters: [
-    {
-      name: "马斯克",
-      title: "著名科技企业家",
-      gender: "男性",
-    },
-  ],
-};
+import { useSettingStore } from "@/store/setting";
+import { Icons } from "@/components/icons";
 
 export default function SettingsPage() {
+  const { podcastSettings, updatePodcastSettings, resetPodcastSettings } =
+    useSettingStore();
   const { toast } = useToast();
-  const [settings, setSettings] = useState<Settings>(defaultSettings);
 
-  const handleSave = () => {
-    // TODO: Save settings to backend
+  const handleReset = () => {
+    resetPodcastSettings();
     toast({
-      title: "设置已保存",
-      description: "您的偏好设置已更新",
+      title: "设置已重置",
+      description: "已恢复默认设置",
     });
   };
 
-  const addCharacter = () => {
-    setSettings((prev) => ({
-      ...prev,
-      characters: [
-        ...prev.characters,
-        {
-          name: "",
-          title: "",
-          gender: "男性",
-        },
-      ],
-    }));
-  };
-
-  const removeCharacter = (index: number) => {
-    setSettings((prev) => ({
-      ...prev,
-      characters: prev.characters.filter((_, i) => i !== index),
-    }));
-  };
-
-  const updateCharacter = (index: number, field: keyof Character, value: string) => {
-    setSettings((prev) => ({
-      ...prev,
-      characters: prev.characters.map((char, i) =>
-        i === index ? { ...char, [field]: value } : char
-      ),
-    }));
+  const updateHost = (
+    index: number,
+    field: keyof (typeof podcastSettings.hosts)[0],
+    value: string
+  ) => {
+    const newHosts = [...podcastSettings.hosts];
+    newHosts[index] = {
+      ...newHosts[index],
+      [field]: value,
+    };
+    updatePodcastSettings({ hosts: newHosts });
   };
 
   return (
-    <div className="container p-2">
-      <div className="flex flex-col space-y-8 max-w-4xl mx-auto">
-        <div>
-          <h1 className="text-3xl font-bold">设置</h1>
-          <p className="text-muted-foreground">自定义您的播客生成偏好</p>
+    <div className="container py-6 space-y-8">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">设置</h1>
+        <Button variant="outline" onClick={handleReset}>
+          <Icons.undo className="mr-2 h-4 w-4" />
+          重置
+        </Button>
+      </div>
+
+      <div className="space-y-6">
+        <div className="grid gap-4">
+          <div className="space-y-2">
+            <Label>输出语言</Label>
+            <Select
+              value={podcastSettings.outputLanguage}
+              onValueChange={(value) =>
+                updatePodcastSettings({ outputLanguage: value })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="zh-CN">中文</SelectItem>
+                <SelectItem value="en-US">English</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>主持风格</Label>
+            <Select
+              value={podcastSettings.hostStyle}
+              onValueChange={(value) =>
+                updatePodcastSettings({ hostStyle: value })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="轻松对话">轻松对话</SelectItem>
+                <SelectItem value="专业讨论">专业讨论</SelectItem>
+                <SelectItem value="深度探讨">深度探讨</SelectItem>
+                <SelectItem value="娱乐闲聊">娱乐闲聊</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>对话时长 (分钟)</Label>
+            <Select
+              value={podcastSettings.duration.toString()}
+              onValueChange={(value) =>
+                updatePodcastSettings({ duration: parseInt(value) })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="3">3分钟</SelectItem>
+                <SelectItem value="5">5分钟</SelectItem>
+                <SelectItem value="10">10分钟</SelectItem>
+                <SelectItem value="15">15分钟</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>LLM 模型</Label>
+            <Select
+              value={podcastSettings.llmModel}
+              onValueChange={(value: typeof podcastSettings.llmModel) =>
+                updatePodcastSettings({ llmModel: value })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="gpt-4o">GPT-4 Optimized</SelectItem>
+                <SelectItem value="gpt-4">GPT-4</SelectItem>
+                <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>TTS 模型</Label>
+            <Select
+              value={podcastSettings.ttsModel}
+              onValueChange={(value: typeof podcastSettings.ttsModel) =>
+                updatePodcastSettings({ ttsModel: value })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="doubao">豆包 TTS</SelectItem>
+                <SelectItem value="tongyi">通义 TTS</SelectItem>
+                <SelectItem value="openai">OpenAI TTS</SelectItem>
+                <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Icons.settings className="h-5 w-5" />
-              基础设置
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Icons.globe className="h-4 w-4" />
-                  输出语言
-                </Label>
-                <Select
-                  value={settings.outputLanguage}
-                  onValueChange={(value) =>
-                    setSettings((prev) => ({ ...prev, outputLanguage: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="zh">中文</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Icons.podcast className="h-4 w-4" />
-                  播客风格
-                </Label>
-                <Select
-                  value={settings.hostStyle}
-                  onValueChange={(value) =>
-                    setSettings((prev) => ({ ...prev, hostStyle: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="默认风格">默认风格</SelectItem>
-                    <SelectItem value="专业风格">专业风格</SelectItem>
-                    <SelectItem value="轻松风格">轻松风格</SelectItem>
-                    <SelectItem value="幽默风格">幽默风格</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Icons.bot className="h-4 w-4" />
-                  LLM 模型
-                </Label>
-                <Select
-                  value={settings.llmModel}
-                  onValueChange={(value) =>
-                    setSettings((prev) => ({ ...prev, llmModel: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Qwen2.5 72B">Qwen2.5 72B</SelectItem>
-                    <SelectItem value="gpt-4">GPT-4</SelectItem>
-                    <SelectItem value="gpt-4o">GPT-4 Optimized</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Icons.speaker className="h-4 w-4" />
-                  TTS 模型
-                </Label>
-                <Select
-                  value={settings.ttsModel}
-                  onValueChange={(value) =>
-                    setSettings((prev) => ({ ...prev, ttsModel: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Doubao TTS">Doubao TTS</SelectItem>
-                    <SelectItem value="Azure TTS">Azure TTS</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Icons.users className="h-5 w-5" />
-              播客角色
-            </CardTitle>
-            <Button variant="outline" size="sm" onClick={addCharacter}>
-              <Icons.plus className="mr-2 h-4 w-4" />
-              添加角色
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {settings.characters.map((character, index) => (
-              <div key={index} className="relative grid grid-cols-4 gap-4">
+        <div className="space-y-4">
+          <Label>主持人设置</Label>
+          <div className="grid gap-4">
+            {podcastSettings.hosts.map((host, index) => (
+              <div key={host.id} className="grid gap-4 p-4 border rounded-lg">
                 <div className="space-y-2">
-                  <Label>名字</Label>
+                  <Label>主持人 {index + 1} 名字</Label>
                   <Input
-                    value={character.name}
-                    onChange={(e) =>
-                      updateCharacter(index, "name", e.target.value)
-                    }
-                    placeholder="角色名字"
+                    value={host.name}
+                    onChange={(e) => updateHost(index, "name", e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>头衔</Label>
-                  <Input
-                    value={character.title}
-                    onChange={(e) =>
-                      updateCharacter(index, "title", e.target.value)
-                    }
-                    placeholder="角色头衔"
-                  />
-                </div>
+
                 <div className="space-y-2">
                   <Label>性别</Label>
                   <Select
-                    value={character.gender}
-                    onValueChange={(value) =>
-                      updateCharacter(index, "gender", value)
+                    value={host.gender}
+                    onValueChange={(value: "male" | "female") =>
+                      updateHost(index, "gender", value)
                     }
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="男性">男性</SelectItem>
-                      <SelectItem value="女性">女性</SelectItem>
+                      <SelectItem value="male">男性</SelectItem>
+                      <SelectItem value="female">女性</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="space-y-2">
-                  <Label>声音</Label>
-                  <Select
-                    value={character.voice}
-                    onValueChange={(value) =>
-                      updateCharacter(index, "voice", value)
+                  <Label>性格特点</Label>
+                  <Input
+                    value={host.personality}
+                    onChange={(e) =>
+                      updateHost(index, "personality", e.target.value)
                     }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="请选择声音" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="voice1">声音 1</SelectItem>
-                      <SelectItem value="voice2">声音 2</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  />
                 </div>
-                {settings.characters.length > 1 && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute -right-12 top-8"
-                    onClick={() => removeCharacter(index)}
-                  >
-                    <Icons.trash className="h-4 w-4" />
-                  </Button>
-                )}
               </div>
             ))}
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-end">
-          <Button onClick={handleSave}>
-            <Icons.save className="mr-2 h-4 w-4" />
-            保存设置
-          </Button>
+          </div>
         </div>
       </div>
     </div>

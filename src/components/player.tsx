@@ -11,7 +11,7 @@ interface PlayerProps {
 
 export function FloatingPlayer({ pod }: PlayerProps) {
   const pathname = usePathname();
-  const { isPlaying, hide } = usePlayerStore();
+  const { isPlaying } = usePlayerStore();
   const isSharePage = pathname.startsWith("/share/");
 
   // Don't show if no pod data
@@ -23,5 +23,5 @@ export function FloatingPlayer({ pod }: PlayerProps) {
   // Don't show on pod detail pages or share pages
   if (isSharePage) return null;
 
-  return <PodPlayer pod={pod} variant="floating" onClose={hide} />;
+  return <PodPlayer pod={pod} variant="floating" />;
 }

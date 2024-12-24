@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "apt-get update && apt-get install -y chromium && pnpm install && pnpm run build"
+buildCommand = ""
 
 [deploy]
 startCommand = "pnpm start"
@@ -12,3 +12,6 @@ restartPolicyType = "on_failure"
 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
 PLAYWRIGHT_BROWSERS_PATH = "/usr/bin/chromium"
 NEXT_TELEMETRY_DISABLED = "1"
+
+[phases.setup]
+nixPkgs = ["chromium"]

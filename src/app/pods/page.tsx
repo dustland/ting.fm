@@ -41,13 +41,15 @@ export default function PodsPage() {
       </div>
 
       {podsList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center space-y-4 py-8">
-          <div className="flex h-full flex-col items-center justify-center gap-6">
+        <div className="flex flex-col w-full items-center justify-center space-y-4 py-8">
+          <div className="flex h-full flex-col w-full items-center justify-center gap-6">
             <div className="flex flex-col items-center gap-4">
               <Icons.headphones className="h-16 w-16 text-muted-foreground" />
-              <p className="text-lg text-muted-foreground">还没有播客，创建您的第一个播客吧！</p>
+              <p className="text-lg text-muted-foreground">
+                还没有播客，创建您的第一个播客吧！
+              </p>
             </div>
-            <CreatePodCard className="max-w-full lg:max-w-2xl w-full" />
+            <CreatePodCard />
           </div>
         </div>
       ) : (

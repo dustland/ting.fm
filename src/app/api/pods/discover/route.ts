@@ -7,9 +7,8 @@ export async function GET(req: Request) {
     const supabase = await createClient();
 
     const { data: pods, error } = await supabase
-      .from("pods")
+      .from("published_pods")
       .select("*")
-      .eq("status", "published")
       .order("created_at", { ascending: false });
 
     if (error) throw error;

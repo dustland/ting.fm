@@ -128,21 +128,12 @@ export function usePods() {
     isLoading: isLoadingRemote,
   } = useSWR(API_ENDPOINT, fetcher);
 
-  // Only update pods from remote if there are actual changes
+  // Always update pods from remote data
   useEffect(() => {
-    if (!remotePods || !Array.isArray(remotePods)) return;
-
-    // Convert pods to map for easier comparison
-    const localPodsMap = new Map(Object.entries(pods));
-    const hasChanges = remotePods.some((remotePod) => {
-      const localPod = localPodsMap.get(remotePod.id);
-      return !localPod || localPod.updatedAt !== remotePod.updatedAt;
-    });
-
-    if (hasChanges) {
-      setPods(remotePods);
-    }
-  }, [remotePods, pods, setPods]);
+    if (!remotePods) return;
+    // Always update with remote data, even if it's empty
+    setPods(Array.isArray(remotePods) ? remotePods : []);
+  }, [remotePods, setPods]);
 
   const handleCreatePod = useCallback(
     async (title: string, source?: PodSource) => {

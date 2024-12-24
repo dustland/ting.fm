@@ -6,7 +6,9 @@ export async function GET() {
   try {
     const supabase = await createClient();
     const user = await getUser();
-    
+
+    console.log("user", user);
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -16,6 +18,8 @@ export async function GET() {
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
+
+    console.log("pods", pods);
 
     if (error) throw error;
 

@@ -64,9 +64,9 @@ export function CreatePodCard({ onCreated, className }: CreatePodCardProps) {
               <Image
                 src="/arxiv-logo.svg"
                 width={120}
-                height={20}
+                height={28}
                 alt="arxiv"
-                className="h-4 w-auto"
+                className="h-5 w-auto"
               />
             </TabsTrigger>
             <TabsTrigger value="url" className="flex items-center gap-2">

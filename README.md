@@ -51,7 +51,30 @@ src/
   ├── lib/             # 工具函数
   ├── store/           # Zustand 状态管理
   └── types/           # TypeScript 类型定义
+
+supabase/
+  └── functions/       # Supabase Edge Functions
+      └── merge-audio  # 音频合并函数
 ```
+
+### Supabase Functions
+
+项目使用 Supabase Edge Functions 处理一些服务端任务：
+
+#### merge-audio
+
+音频合并函数，用于将多个音频片段合并成一个完整的播客音频。
+
+- **功能**: 接收多个音频片段的 URL，下载并合并成单个音频文件
+- **参数**:
+  - `podId`: string - 播客的唯一标识符
+  - `segments`: AudioSegment[] - 音频片段数组，每个片段包含 URL 和持续时间
+- **调用方式**:
+  ```typescript
+  const { data, error } = await supabase.functions.invoke("merge-audio", {
+    body: { podId, segments }
+  });
+  ```
 
 ### 开发规范
 

@@ -189,15 +189,22 @@ export default function PodPage({ params }: Props) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          audioUrls: audioResults.map((r) => r.url),
+          podId: id,
+          segments: audioResults.map((r) => ({
+            // Extract just the filename from the full URL
+            url: r.url.split('/').pop()!,
+            duration: 0
+          }))
         }),
       });
 
       if (!response.ok) {
-        throw new Error("合并音频失败");
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Merge API error:", errorData);
+        throw new Error(errorData.error || "合并音频失败");
       }
 
-      const { url: mergedAudioUrl } = await response.json();
+      const { publicUrl: mergedAudioUrl } = await response.json();
 
       // Update pod with all audio URLs in one call
       if (pod) {
@@ -225,20 +232,35 @@ export default function PodPage({ params }: Props) {
   };
 
   const handlePublish = async () => {
+    if (!pod?.audioUrl) {
+      toast({
+        title: "错误",
+        description: "请先生成播客音频",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsPublishing(true);
-      await updatePod({
+      const newStatus = pod.status === "published" ? "draft" : "published";
+
+      const updatedPod = {
         ...pod,
-        status: pod?.status === "published" ? "ready" : "published",
+        status: newStatus as "draft" | "ready" | "published",
         updatedAt: new Date().toISOString(),
-      });
+      };
+
+      await updatePod(updatedPod);
+
       toast({
-        description: pod?.status === "published" ? "已取消发布" : "已发布",
+        description: newStatus === "published" ? "已发布" : "已取消发布",
       });
     } catch (error) {
+      console.error("Error publishing pod:", error);
       toast({
         variant: "destructive",
-        description: "发布失败",
+        description: "发布失败，请稍后再试",
       });
     } finally {
       setIsPublishing(false);
@@ -335,406 +357,161 @@ export default function PodPage({ params }: Props) {
                 </Badge>
               )}
             </div>
-
-            {pod?.audioUrl && (
-              <div className="flex items-center gap-2 ml-auto order-last w-full sm:w-auto mt-2 sm:mt-0">
-                <FloatingPlayer
-                  pod={{ id: pod.id, title: pod.title, audioUrl: pod.audioUrl }}
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0"
-                  asChild
-                >
-                  <a
-                    href={pod.audioUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="下载音频"
-                  >
-                    <Icons.download className="h-4 w-4" />
-                  </a>
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              onClick={() => handleGenerateDialogues()}
-              variant={dialogues?.length ? "outline" : "default"}
-              disabled={isGeneratingDialogues}
-              className="flex items-center gap-2"
-            >
-              {isGeneratingDialogues ? (
-                <>
-                  <Icons.spinner className="h-4 w-4 animate-spin" />
-                  <span>生成剧本中...</span>
-                </>
-              ) : dialogues?.length ? (
-                <>
-                  <Icons.wand className="h-4 w-4" />
-                  <span>重新生成剧本</span>
-                </>
-              ) : (
-                <>
-                  <Icons.wand className="h-4 w-4" />
-                  <span>生成剧本</span>
-                </>
-              )}
-            </Button>
-
-            <Button
-              onClick={() => handleGeneratePodcast()}
-              disabled={isGeneratingPodcast || !dialogues?.length}
-              className="flex items-center gap-2"
-            >
-              {isGeneratingPodcast ? (
-                <>
-                  <Icons.spinner className="h-4 w-4 animate-spin" />
-                  <span>生成播客中...</span>
-                </>
-              ) : (
-                <>
-                  <Icons.podcast className="h-4 w-4" />
-                  <span>生成播客</span>
-                </>
-              )}
-            </Button>
-
-            {pod?.audioUrl && (
-              <Button
-                variant={pod?.status === "published" ? "default" : "outline"}
-                size="sm"
-                className="h-8 ml-auto"
-                onClick={handlePublish}
-                disabled={isPublishing || isUpdating}
-              >
-                {isPublishing ? (
-                  <>
-                    <Icons.spinner className="h-3 w-3 animate-spin" />
-                    <span>处理中...</span>
-                  </>
-                ) : (
-                  <>
-                    <Icons.publish className="h-3 w-3" />
-                    <span>
-                      {pod?.status === "published" ? "取消发布" : "发布"}
-                    </span>
-                  </>
-                )}
-              </Button>
-            )}
           </div>
         </div>
 
-        {/* Tabs Section */}
-        <Tabs
-          defaultValue="source"
-          className="flex-1 flex flex-col min-h-0 mt-3 sm:mt-6"
-        >
-          <TabsList className="flex-none grid w-full grid-cols-3 p-0.5">
-            <TabsTrigger
-              value="source"
-              className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
-            >
-              <Icons.text className="h-3 w-3 sm:h-4 sm:w-4" />
-              原文内容
-            </TabsTrigger>
-            <TabsTrigger
-              value="dialogues"
-              className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
-            >
-              <Icons.podcast className="h-3 w-3 sm:h-4 sm:w-4" />
-              播客剧本
-            </TabsTrigger>
-            <TabsTrigger
-              value="podcast"
-              className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
-              disabled={!dialogues?.length}
-            >
-              <Icons.headphones className="h-3 w-3 sm:h-4 sm:w-4" />
-              播客
-            </TabsTrigger>
-          </TabsList>
+        {/* Content Area */}
+        <div className="flex-1 min-h-0 mt-4">
+          <Tabs defaultValue="source" className="flex-1">
+            <div className="flex items-center w-full justify-between gap-2 mb-4">
+              <TabsList className="h-8">
+                <TabsTrigger value="source" className="text-xs px-3">
+                  原文内容
+                </TabsTrigger>
+                <TabsTrigger value="dialogues" className="text-xs px-3">
+                  播客剧本
+                </TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="source" className="flex-1 min-h-0">
-            <Card className="h-full">
-              <CardContent className="p-0 h-full">
-                <ScrollArea className="h-full">
-                  {pod?.source ? (
-                    <div className="p-2 sm:p-6">
-                      {/* Header Section */}
-                      {pod.source && (
-                        <div className="flex flex-col space-y-2 sm:space-y-4 pb-3 sm:pb-6 border-b">
-                          {/* Title and External Link */}
-                          <h1 className="text-lg sm:text-xl font-semibold tracking-tight">
-                            {pod.source.metadata?.title || pod.title}
-                          </h1>
-
-                          {/* Metadata Section */}
-                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
-                            {/* Type Badge */}
-                            {pod.source.type === "paper" &&
-                              pod.source.metadata?.categories &&
-                              pod.source.metadata.categories[0] && (
-                                <div className="flex items-center gap-2 w-full">
-                                  <Icons.arxiv className="h-4 w-4 shrink-0" />
-                                  {pod.source.metadata.categories.map(
-                                    (category, index) => (
-                                      <span
-                                        key={index}
-                                        className="nowrap max-w-48 truncate p-1 border rounded-md bg-muted/50"
-                                      >
-                                        {category}
-                                      </span>
-                                    )
-                                  )}
-                                </div>
-                              )}
-                            {/* Dates */}
-                            {pod.source.metadata?.createdAt && (
-                              <div className="flex items-center gap-1">
-                                <Icons.calendar className="h-4 w-4" />
-                                <span>
-                                  发布于{" "}
-                                  {new Date(
-                                    pod.source.metadata.createdAt
-                                  ).toLocaleDateString("zh-CN")}
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Links */}
-                            {pod.source.metadata?.link && (
-                              <a
-                                href={pod.source.metadata.link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1"
-                              >
-                                <Icons.externalLink className="h-4 w-4" />
-                                <span>原文</span>
-                              </a>
-                            )}
-
-                            {pod.source.metadata?.pdfLink && (
-                              <a
-                                href={pod.source.metadata.pdfLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1"
-                              >
-                                <Icons.fileText className="h-4 w-4" />
-                                <span>PDF</span>
-                              </a>
-                            )}
-                            {/* Authors */}
-                            {pod.source.metadata?.authors &&
-                              pod.source.metadata.authors.length > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <Icons.users className="h-4 w-4" />
-                                  <span>
-                                    {pod.source.metadata.authors.join(", ")}
-                                  </span>
-                                </div>
-                              )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Content Section */}
-                      <div className="mt-3 sm:mt-6">
-                        {pod.source.type === "paper" && pod.source.metadata && (
-                          <div className="space-y-3 sm:space-y-6">
-                            {pod.source.metadata.summary && (
-                              <div className="mt-2 sm:mt-4">
-                                <h3 className="font-medium text-sm mb-1 sm:mb-2">
-                                  摘要
-                                </h3>
-                                <p className="text-sm text-muted-foreground">
-                                  {pod.source.metadata.summary}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        {pod.source.type !== "paper" && pod.source.content && (
-                          <div className="space-y-4">
-                            {pod.source.content
-                              .split("\n")
-                              .map((paragraph, index) => (
-                                <p
-                                  key={index}
-                                  className="text-sm text-muted-foreground"
-                                >
-                                  {paragraph}
-                                </p>
-                              ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+              {dialogues?.length ? (
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => handleGenerateDialogues()}
+                    variant="outline"
+                    size="sm"
+                    disabled={isGeneratingDialogues}
+                    className="h-8"
+                  >
+                    {isGeneratingDialogues ? (
+                      <>
+                        <Icons.spinner className="h-3.5 w-3.5 animate-spin mr-2" />
+                        <span>生成中...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Icons.wand className="h-3.5 w-3.5 mr-2" />
+                        <span>重新生成剧本</span>
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={handleGeneratePodcast}
+                    variant="outline"
+                    size="sm"
+                    disabled={isGeneratingPodcast}
+                    className="h-8"
+                  >
+                    {isGeneratingPodcast ? (
+                      <>
+                        <Icons.spinner className="h-3.5 w-3.5 animate-spin mr-2" />
+                        <span>生成中...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Icons.podcast className="h-3.5 w-3.5 mr-2" />
+                        <span>重新生成播客</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={() => handleGenerateDialogues()}
+                  size="sm"
+                  disabled={isGeneratingDialogues}
+                  className="h-8"
+                >
+                  {isGeneratingDialogues ? (
+                    <>
+                      <Icons.spinner className="h-3.5 w-3.5 animate-spin mr-2" />
+                      <span>生成中...</span>
+                    </>
                   ) : (
-                    <div className="p-8 text-center text-muted-foreground">
-                      <p>播客内容加载中...</p>
-                    </div>
+                    <>
+                      <Icons.wand className="h-3.5 w-3.5 mr-2" />
+                      <span>生成剧本</span>
+                    </>
                   )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                </Button>
+              )}
+            </div>
 
-          <TabsContent value="dialogues" className="flex-1 min-h-0">
-            <Card className="h-full">
-              <CardContent className="relative p-0 h-full">
-                <ScrollArea className="h-full">
-                  <div className="p-4 space-y-4">
-                    {!dialogues?.length ? (
-                      <div className="flex flex-col items-center justify-center min-h-[400px] py-8 gap-6">
-                        <div className="flex flex-col items-center gap-4">
-                          <Icons.podcast className="h-16 w-16 text-muted-foreground" />
-                          <p className="text-lg text-muted-foreground">
-                            根据原文内容生成播客剧本
-                          </p>
+            <TabsContent value="source" className="flex-1 min-h-0">
+              <Card className="h-full">
+                <CardContent className="p-0 h-full">
+                  <ScrollArea className="h-full">
+                    {pod?.source ? (
+                      <div className="p-4 prose prose-sm max-w-none">
+                        <div className="flex items-center gap-2 mb-4">
+                          {getSourceTypeIcon(pod.source.type)}
+                          <span className="text-sm text-muted-foreground">
+                            {getSourceTypeText(pod.source.type)}
+                          </span>
                         </div>
-                        <Button
-                          onClick={handleGenerateDialogues}
-                          className="gap-2"
-                        >
-                          {isGeneratingDialogues ? (
-                            <>
-                              <Icons.spinner className="h-4 w-4 animate-spin" />
-                              <span>正在生成播客剧本...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Icons.wand className="h-4 w-4" />
-                              <span>生成播客剧本</span>
-                            </>
-                          )}
-                        </Button>
+                        <div className="whitespace-pre-wrap">
+                          {pod.source.content}
+                        </div>
                       </div>
                     ) : (
-                      dialogues?.map((dialogue) => (
-                        <DialogueLine
-                          key={dialogue.id}
-                          dialogue={dialogue}
-                          onEdit={handleEdit}
-                        />
-                      ))
+                      <div className="p-8 text-center text-muted-foreground">
+                        <p>播客内容加载中...</p>
+                      </div>
                     )}
-                  </div>
-                  <div ref={dialoguesEndRef} />
-                </ScrollArea>
-                {isGeneratingDialogues && (
-                  <div className="absolute top-2 right-2">
-                    <Button
-                      variant="destructive"
-                      onClick={handleStopGenerating}
-                      className="flex items-center gap-2"
-                    >
-                      <Icons.stop className="h-4 w-4 animate-spin" />
-                      <span>停止生成</span>
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="podcast" className="flex-1 min-h-0 relative">
-            <Card className="absolute inset-0">
-              <CardContent className="p-0 h-full">
-                <ScrollArea className="h-full">
-                  <div className="p-2 sm:p-6 space-y-6">
-                    {/* Audio Player Section */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h2 className="text-lg sm:text-xl font-semibold mb-2">
-                            {pod?.title}
-                          </h2>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            {pod?.source?.metadata?.wordCount && (
-                              <div className="flex items-center gap-1">
-                                <Icons.documentText className="h-3.5 w-3.5" />
-                                <span>{pod.source.metadata.wordCount}字</span>
-                              </div>
-                            )}
-                            {pod?.source?.metadata?.readingTime && (
-                              <div className="flex items-center gap-1">
-                                <Icons.clock className="h-3.5 w-3.5" />
-                                <span>
-                                  {pod.source.metadata.readingTime}分钟
-                                </span>
-                              </div>
-                            )}
+            <TabsContent value="dialogues" className="flex-1 min-h-0">
+              <Card className="h-full">
+                <CardContent className="relative p-0 h-full">
+                  <ScrollArea className="h-full">
+                    <div className="p-4 space-y-4">
+                      {!dialogues?.length ? (
+                        <div className="flex flex-col items-center justify-center min-h-[400px] py-8 gap-6">
+                          <div className="flex flex-col items-center gap-4">
+                            <Icons.podcast className="h-16 w-16 text-muted-foreground" />
+                            <p className="text-lg text-muted-foreground">
+                              根据原文内容生成播客剧本
+                            </p>
                           </div>
                         </div>
-                      </div>
-
-                      <div className="bg-muted/50 rounded-lg p-3">
-                        <FloatingPlayer
-                          pod={{
-                            id: pod.id,
-                            title: pod.title,
-                            audioUrl: pod.audioUrl,
-                          }}
-                        />
-                      </div>
+                      ) : (
+                        <>
+                          {dialogues.map((dialogue, index) => (
+                            <DialogueLine
+                              key={dialogue.id}
+                              dialogue={dialogue}
+                              onEdit={handleEdit}
+                            />
+                          ))}
+                          <div ref={dialoguesEndRef} />
+                        </>
+                      )}
                     </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
 
-                    {/* Description */}
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium">简介</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {pod?.source?.metadata?.summary ||
-                          pod?.source?.content?.slice(0, 200)}
-                        ...
-                      </p>
-                    </div>
-
-                    {/* Source Links */}
-                    {(pod?.source?.metadata?.link ||
-                      pod?.source?.metadata?.pdfLink) && (
-                      <div className="flex flex-wrap gap-2">
-                        {pod.source.metadata.link && (
-                          <Button variant="outline" size="sm" asChild>
-                            <a
-                              href={pod.source.metadata.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5"
-                            >
-                              <Icons.externalLink className="h-3.5 w-3.5" />
-                              原文
-                            </a>
-                          </Button>
-                        )}
-                        {pod.source.metadata.pdfLink && (
-                          <Button variant="outline" size="sm" asChild>
-                            <a
-                              href={pod.source.metadata.pdfLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5"
-                            >
-                              <Icons.fileText className="h-3.5 w-3.5" />
-                              PDF
-                            </a>
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        {/* Floating Player */}
+        {dialogues?.length > 0 && (
+          <FloatingPlayer
+            pod={{
+              id: pod.id,
+              title: pod.title,
+              audioUrl: pod.audioUrl,
+              status: pod.status,
+              summary: pod.summary
+            }}
+            onGenerate={handleGeneratePodcast}
+            onPublish={handlePublish}
+            isGenerating={isGeneratingPodcast}
+            isPublishing={isPublishing}
+          />
+        )}
       </div>
     </div>
   );

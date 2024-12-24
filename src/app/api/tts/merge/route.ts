@@ -1,45 +1,56 @@
 import { NextResponse } from "next/server";
-import { uploadFile } from "@/lib/supabase/client";
+import { createServiceClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   try {
-    const { audioUrls } = await request.json();
+    const body = await request.json();
+    console.log("Received request body:", body);
 
-    // Download all audio files
-    const audioBuffers = await Promise.all(
-      audioUrls.map(async (url: string) => {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`Failed to download audio from ${url}`);
-        }
-        return response.arrayBuffer();
-      })
-    );
-
-    // Concatenate audio buffers
-    const totalLength = audioBuffers.reduce(
-      (acc, buffer) => acc + buffer.byteLength,
-      0
-    );
-    const mergedBuffer = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const buffer of audioBuffers) {
-      mergedBuffer.set(new Uint8Array(buffer), offset);
-      offset += buffer.byteLength;
+    const { podId, segments } = body;
+    
+    if (!podId || !segments || !Array.isArray(segments)) {
+      return NextResponse.json(
+        { error: "Invalid request: podId and segments array are required" },
+        { status: 400 }
+      );
     }
 
-    // Create a Blob from the merged buffer
-    const blob = new Blob([mergedBuffer], { type: "audio/mp3" });
-    const file = new File([blob], "merged.mp3", { type: "audio/mp3" });
+    if (segments.length === 0) {
+      return NextResponse.json(
+        { error: "Invalid request: segments array cannot be empty" },
+        { status: 400 }
+      );
+    }
 
-    // Upload merged file
-    const url = await uploadFile(file, "audio");
+    // Validate each segment
+    for (const segment of segments) {
+      if (!segment.url || typeof segment.duration !== 'number') {
+        return NextResponse.json(
+          { error: "Invalid segment: each segment must have url and duration" },
+          { status: 400 }
+        );
+      }
+    }
 
-    return NextResponse.json({ url: url.url });
-  } catch (error) {
-    console.error("[MERGE_AUDIO_ERROR]", error);
+    const supabase = await createServiceClient();
+    console.log("Calling merge-audio function with:", { podId, segments });
+
+    // Call Supabase Edge Function to merge audio
+    const { data, error } = await supabase.functions.invoke("merge-audio", {
+      body: { podId, segments },
+    });
+
+    if (error) {
+      console.error("Supabase function error:", error);
+      throw error;
+    }
+
+    console.log("Merge function response:", data);
+    return NextResponse.json(data);
+  } catch (error: any) {
+    console.error("Error merging audio:", error);
     return NextResponse.json(
-      { error: "Failed to merge audio files" },
+      { error: error.message || "Failed to merge audio files" },
       { status: 500 }
     );
   }

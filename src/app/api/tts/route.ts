@@ -3,6 +3,30 @@ import OpenAI from "openai";
 import { bufferToFile, uploadFile } from "@/lib/supabase/client";
 import { nanoid } from "nanoid";
 
+const MAX_RETRIES = 3;
+const INITIAL_DELAY = 1000; // 1 second
+
+async function retryWithExponentialBackoff<T>(
+  operation: () => Promise<T>,
+  retries = MAX_RETRIES,
+  delay = INITIAL_DELAY
+): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (retries === 0) throw error;
+
+    console.log(`TTS API: Retrying operation, ${retries} attempts remaining`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+    
+    return retryWithExponentialBackoff(
+      operation,
+      retries - 1,
+      delay * 2
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     console.log("TTS API: Starting request");
@@ -31,10 +55,12 @@ export async function POST(request: Request) {
     }
 
     console.log("TTS API: Calling OpenAI speech API");
-    const mp3 = await openai.audio.speech.create({
-      model: "tts-1",
-      voice: voice || "nova",
-      input: text,
+    const mp3 = await retryWithExponentialBackoff(async () => {
+      return await openai.audio.speech.create({
+        model: "tts-1",
+        voice: voice || "nova",
+        input: text,
+      });
     });
     console.log("TTS API: OpenAI speech generation successful");
 

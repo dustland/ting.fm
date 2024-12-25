@@ -46,12 +46,14 @@ export async function POST(req: Request) {
           name: "奥德彪",
           gender: "male",
           personality: "专业、富有见识",
+          voiceId: "professional-male",
         },
         {
           id: "host2",
           name: "小美",
           gender: "female",
           personality: "活泼、亲和力强",
+          voiceId: "friendly-female",
         },
       ],
     };

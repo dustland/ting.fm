@@ -215,8 +215,11 @@ async function generateDoubaoTTS(
   }
 
   // The audio data is returned directly in the response as base64
-  const audioBuffer = Buffer.from(result.data, "base64");
-  return audioBuffer;
+  const buffer = Buffer.from(result.data, "base64");
+  return buffer.buffer.slice(
+    buffer.byteOffset,
+    buffer.byteOffset + buffer.byteLength
+  );
 }
 
 async function generateTongyiTTS(

@@ -29,7 +29,7 @@ export function DialogueLine({
     isPlaying: boolean;
   }>({ isLoading: false, isPlaying: false });
   const audioRef = useRef<HTMLAudioElement>(null);
-  const { podcastSettings } = useSettingStore();
+  const { podcastSettings: settings } = useSettingStore();
 
   const handleEdit = () => {
     if (!onEdit) return;
@@ -63,7 +63,7 @@ export function DialogueLine({
         body: JSON.stringify({
           text,
           host: dialogue.host,
-          settings: podcastSettings,
+          settings: settings,
         }),
       });
 
@@ -106,14 +106,14 @@ export function DialogueLine({
   return (
     <div
       className={cn(
-        "flex gap-3 p-3 rounded-lg items-start",
-        dialogue.host === "奥德彪" ? "bg-muted/50" : "bg-background",
+        "flex items-start space-x-4 p-4 rounded-lg",
+        dialogue.host === settings.hosts[0].name ? "bg-muted/50" : "bg-background",
         className
       )}
     >
-      <Avatar className="h-8 w-8 mt-1">
-        <AvatarFallback className="text-xs">
-          {dialogue.host === "奥德彪" ? "H1" : "H2"}
+      <Avatar className="h-8 w-8">
+        <AvatarFallback>
+          {dialogue.host === settings.hosts[0].name ? "H1" : "H2"}
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">

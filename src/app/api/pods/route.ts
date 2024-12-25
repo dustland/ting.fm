@@ -7,8 +7,6 @@ export async function GET() {
     const supabase = await createClient();
     const user = await getUser();
 
-    console.log("user", user);
-
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

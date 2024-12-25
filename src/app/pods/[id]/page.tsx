@@ -23,7 +23,7 @@ export default function PodPage({ params }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const { podcastSettings } = useSettingStore();
-  const { pod, isLoading, isUpdating, updateDialogue } = usePod(id);
+  const { pod, isLoading, isUpdating, updateDialogue, updatePod } = usePod(id);
   const dialoguesEndRef = useRef<HTMLDivElement>(null);
   const {
     append,
@@ -72,6 +72,10 @@ export default function PodPage({ params }: Props) {
     if (!pod?.source) return;
 
     try {
+      updatePod({
+        ...pod,
+        dialogues: [],
+      });
       await append({
         role: "user",
         content: pod.source.content,

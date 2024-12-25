@@ -1,11 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { TTSProvider } from "@/lib/voice-mapping";
 
 export interface PodcastHost {
   id: string;
   name: string;
   gender: "male" | "female";
   personality: string;
+  voiceId: string; // Reference to virtual voice ID
 }
 
 export interface PodcastSettings {
@@ -15,7 +17,7 @@ export interface PodcastSettings {
   outputLanguage: string;
   hostStyle: string;
   llmModel: "gpt-4o" | "gpt-4" | "gpt-3.5-turbo";
-  ttsModel: "doubao" | "tongyi" | "openai" | "elevenlabs";
+  ttsModel: TTSProvider;
 }
 
 interface SettingState {
@@ -37,12 +39,14 @@ const defaultPodcastSettings: PodcastSettings = {
       name: "奥德彪",
       gender: "male",
       personality: "专业、富有见识",
+      voiceId: "professional-male",
     },
     {
       id: "host2",
       name: "小美",
       gender: "female",
       personality: "活泼、亲和力强",
+      voiceId: "friendly-female",
     },
   ],
 };

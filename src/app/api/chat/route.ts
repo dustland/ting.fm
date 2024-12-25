@@ -63,6 +63,19 @@ export async function POST(req: Request) {
 
     if (format === "podcast") {
       // Generate the podcast script
+      const defaultHosts = [
+        {
+          id: "host1",
+          name: finalPodcastOptions.hosts[0].name,
+          personality: finalPodcastOptions.hosts[0].personality,
+        },
+        {
+          id: "host2",
+          name: finalPodcastOptions.hosts[1].name,
+          personality: finalPodcastOptions.hosts[1].personality,
+        },
+      ];
+
       const requestBody = {
         model: openai(finalPodcastOptions.llmModel),
         messages: [
@@ -90,11 +103,11 @@ ${finalPodcastOptions.hosts
 
 **Dialogue Format:**
 1. Each line should begin with the host's name, e.g.,
-   - [[${finalPodcastOptions.hosts[0].name}]]: 大家好，我是${
-              finalPodcastOptions.hosts[0].name
+   - [[${defaultHosts[0].name}]]: 大家好，我是${
+              defaultHosts[0].name
             }。
-   - [[${finalPodcastOptions.hosts[1].name}]]: 我是${
-              finalPodcastOptions.hosts[1].name
+   - [[${defaultHosts[1].name}]]: 我是${
+              defaultHosts[1].name
             }，今天我们来聊聊这个话题。
 
 **Dialogue Style:**

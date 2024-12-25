@@ -25,7 +25,7 @@ export const voices: VoiceDefinition[] = [
     mapping: {
       openai: "onyx",
       elevenlabs: "pNInz6obpgDQGcFmaJgB", // Adam
-      doubao: "male_1",
+      doubao: "zh_male_beijingxiaoye_moon_bigtts", // 男声-中国-rap
       tongyi: "pro_male",
     },
   },
@@ -37,7 +37,7 @@ export const voices: VoiceDefinition[] = [
     mapping: {
       openai: "nova",
       elevenlabs: "21m00Tcm4TlvDq8ikWAM", // Rachel
-      doubao: "female_1",
+      doubao: "ICL_zh_female_linjuayi_tob", // 女声-中国-少女
       tongyi: "pro_female",
     },
   },

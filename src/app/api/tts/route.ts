@@ -150,8 +150,73 @@ async function generateDoubaoTTS(
   text: string,
   voice: string
 ): Promise<ArrayBuffer> {
-  // TODO: Implement 豆包 TTS
-  throw new Error("豆包 TTS not implemented yet");
+  if (
+    !process.env.DOUBAO_ACCESS_TOKEN ||
+    !process.env.DOUBAO_SECRET_TOKEN ||
+    !process.env.DOUBAO_APP_ID
+  ) {
+    throw new Error("Doubao API keys not configured");
+  }
+
+  const endpoint = "https://openspeech.bytedance.com";
+  const params = {
+    app: {
+      appid: process.env.DOUBAO_APP_ID,
+      token: "access_token",
+      cluster: "volcano_tts",
+    },
+    user: {
+      uid: "tingfm",
+    },
+    audio: {
+      voice_type: voice,
+      encoding: "mp3",
+    },
+    request: {
+      reqid: nanoid(),
+      text,
+      text_type: "plain",
+      operation: "query",
+      with_frontend: 1,
+      frontend_type: "unitTson",
+    },
+  };
+
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer;${process.env.DOUBAO_ACCESS_TOKEN}`,
+  };
+
+  console.log("[Doubao] Request:", {
+    url: `${endpoint}/api/v1/tts`,
+    params,
+    headers: {
+      ...headers,
+      Authorization: "Bearer ***",
+    },
+  });
+
+  const response = await fetch(`${endpoint}/api/v1/tts`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(params),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    console.error("[Doubao] Error:", error);
+    throw new Error("Failed to generate audio with Doubao");
+  }
+
+  const result = await response.json();
+
+  if (!result.data) {
+    throw new Error("No audio data in Doubao response");
+  }
+
+  // The audio data is returned directly in the response as base64
+  const audioBuffer = Buffer.from(result.data, "base64");
+  return audioBuffer;
 }
 
 async function generateTongyiTTS(
